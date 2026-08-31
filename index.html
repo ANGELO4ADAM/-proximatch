@@ -603,7 +603,7 @@
             const email = emailInput ? emailInput.value.trim() : '';
             const msgDiv = document.getElementById('forgot-msg');
 
-            if (btn) { btn.disabled = true; btn.innerText = "Envoi en cours..."; }
+            if (btn) { btn.disabled = true; btn.innerText = "Génération du jeton..."; }
 
             try {
                 const res = await fetch('/api/v1/auth/forgot-password', {
@@ -612,15 +612,26 @@
                     body: JSON.stringify({ email })
                 });
                 const result = await res.json();
-                if (msgDiv) {
-                    msgDiv.textContent = result.message;
-                    msgDiv.className = "text-xs p-3 rounded-xl text-center bg-emerald-500/10 border border-emerald-500/30 text-emerald-400";
-                    msgDiv.classList.remove('hidden');
-                }
-                if (result.reset_token_demo) {
+                
+                if (res.ok) {
+                    const devToken = result.dev_token || result.reset_token_demo || 'demo_token';
+                    const tokenNotice = devToken ? `<br><span class="inline-block mt-2 font-mono text-[11px] text-amber-300 bg-black/60 px-2.5 py-1 rounded-lg border border-amber-500/30">Jeton de sécurité : <b>${devToken}</b></span>` : '';
+                    
+                    if (msgDiv) {
+                        msgDiv.innerHTML = `${result.message} ${tokenNotice}`;
+                        msgDiv.className = "text-xs p-3 rounded-xl text-left bg-amber-500/10 border border-amber-500/30 text-amber-300";
+                        msgDiv.classList.remove('hidden');
+                    }
+
                     setTimeout(() => {
-                        showResetPasswordForm(email, result.reset_token_demo);
-                    }, 1200);
+                        showResetPasswordForm(email, devToken);
+                    }, 2000);
+                } else {
+                    if (msgDiv) {
+                        msgDiv.textContent = result.detail || "Erreur lors de la demande.";
+                        msgDiv.className = "text-xs p-3 rounded-xl text-center bg-red-500/10 border border-red-500/30 text-red-400";
+                        msgDiv.classList.remove('hidden');
+                    }
                 }
             } catch (err) {
                 if (msgDiv) {
@@ -632,6 +643,7 @@
                 if (btn) { btn.disabled = false; btn.innerText = "Envoyer le lien de réinitialisation"; }
             }
         }
+
 
         function showResetPasswordForm(email, token = '') {
             const container = document.getElementById('form-container');

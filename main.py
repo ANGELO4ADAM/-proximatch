@@ -838,20 +838,24 @@ async def forgot_password(data: ForgotPasswordRequest, db: sqlite3.Connection = 
     user = c.fetchone()
 
     if not user:
-        # Par sécurité, on ne divulgue pas si l'email existe ou non, mais on simule le succès
-        return {"status": "success", "message": "Si cet e-mail existe, un lien de réinitialisation a été envoyé."}
+        return {
+            "status": "success",
+            "message": "Si cet e-mail existe, un jeton de réinitialisation a été généré.",
+            "dev_token": "demo_token",
+            "reset_token_demo": "demo_token"
+        }
 
-    # Génération d'un token simple de réinitialisation
     reset_token = hashlib.sha256((data.email.strip().lower() + "secret_reset_salt").encode()).hexdigest()[:10]
 
-    # Simulation de l'envoi d'e-mail
     print(f"[EMAIL SIMULATION] Lien de réinitialisation pour {data.email} : /reset-password?token={reset_token}")
 
     return {
         "status": "success",
-        "message": "Un e-mail contenant les instructions de réinitialisation a été envoyé à votre adresse.",
+        "message": "Jeton de sécurité généré avec succès.",
+        "dev_token": reset_token,
         "reset_token_demo": reset_token
     }
+
 
 
 @app.post(
