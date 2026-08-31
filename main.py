@@ -444,11 +444,12 @@ def require_role(allowed_roles: list[str]):
 # ----------------------------------------------------------------------
 class UserRegister(BaseModel):
     email: str = Field(..., description="Adresse e-mail valide")
-    password: str = Field(..., description="Mot de passe")
+    password: Optional[str] = Field("ProxiMatch2026!", description="Mot de passe")
     first_name: Optional[str] = Field(None, description="Prénom")
     last_name: Optional[str] = Field(None, description="Nom")
     name: Optional[str] = Field("Utilisateur", description="Nom complet ou Enseigne")
     phone: Optional[str] = Field("0600000000", description="Numéro de téléphone")
+
     role: Optional[str] = Field("client", description="Rôle : 'client', 'customer', 'provider', 'admin'")
     skill: Optional[str] = Field("Général", description="Spécialité / Métier pour prestataire")
     hourly_rate: Optional[float] = Field(35.0, description="Tarif horaire")
@@ -695,11 +696,10 @@ def register_user(
 
     welcome_message = (
         f"Bienvenue sur ProxiMatch, {display_name} ! "
-        f"Votre inscription en tant que {user_role} est validée. "
-        f"Rappel de sécurité : toutes les prestations doivent transiter par notre système de séquestre Stripe "
-        f"pour garantir vos garanties et la politique anti-désintermédiation. "
-        f"Vous êtes désormais abonné à notre liste de diffusion d'informations de sécurité."
+        f"Un lien d'activation a été envoyé à {payload.email.strip().lower()} et un code de validation SMS a été transmis au {phone_val}. "
+        f"Votre compte sera actif dès validation pour accéder au radar de proximité et aux listes de diffusion de sécurité."
     )
+
 
     phone_masked = f"{phone_val[:2]} ** ** ** {phone_val[-2:]}" if len(phone_val) >= 4 else phone_val
     now_iso = datetime.now(timezone.utc).isoformat()
