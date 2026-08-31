@@ -424,9 +424,11 @@ class UserRegister(BaseModel):
     max_distance_km: Optional[float] = Field(15.0, description="Rayon d'action en km")
     latitude: Optional[float] = Field(48.8590, description="Latitude")
     longitude: Optional[float] = Field(2.3780, description="Longitude")
+    avatar_url: Optional[str] = Field("https://images.unsplash.com/photo-1534528741775-53994a69daeb", description="URL de photo de profil")
 
 
 UserAuth = UserRegister
+
 
 
 
@@ -635,11 +637,12 @@ def register_user(
         dist_val = payload.max_distance_km if payload.max_distance_km and payload.max_distance_km > 0 else 30.0
         lat_val = payload.latitude if payload.latitude else 48.8590
         lon_val = payload.longitude if payload.longitude else 2.3780
+        avatar_val = payload.avatar_url.strip() if payload.avatar_url else "https://images.unsplash.com/photo-1534528741775-53994a69daeb"
 
         cursor.execute(
             """
-            INSERT INTO provider_profiles (name, skills, postal_codes, hourly_rate, service_radius_km, latitude, longitude, is_active, rating_avg)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1, 4.9)
+            INSERT INTO provider_profiles (name, skills, postal_codes, hourly_rate, service_radius_km, latitude, longitude, is_active, rating_avg, avatar_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1, 4.9, ?)
             """,
             (
                 display_name,
@@ -649,8 +652,10 @@ def register_user(
                 dist_val,
                 lat_val,
                 lon_val,
+                avatar_val,
             ),
         )
+
 
     db.commit()
 
@@ -819,7 +824,8 @@ def get_providers_v1(
             SELECT id, name, coalesce(skills, 'Général') as skill, hourly_rate, 
                    coalesce(service_radius_km, 15.0) as max_distance_km, 
                    coalesce(latitude, 48.8590) as latitude, 
-                   coalesce(longitude, 2.3780) as longitude
+                   coalesce(longitude, 2.3780) as longitude,
+                   coalesce(avatar_url, 'https://images.unsplash.com/photo-1534528741775-53994a69daeb') as avatar_url
             FROM provider_profiles 
             WHERE is_active = 1 AND skills LIKE ?
             ORDER BY id ASC
@@ -832,7 +838,8 @@ def get_providers_v1(
             SELECT id, name, coalesce(skills, 'Général') as skill, hourly_rate, 
                    coalesce(service_radius_km, 15.0) as max_distance_km, 
                    coalesce(latitude, 48.8590) as latitude, 
-                   coalesce(longitude, 2.3780) as longitude
+                   coalesce(longitude, 2.3780) as longitude,
+                   coalesce(avatar_url, 'https://images.unsplash.com/photo-1534528741775-53994a69daeb') as avatar_url
             FROM provider_profiles 
             WHERE is_active = 1
             ORDER BY id ASC
@@ -850,9 +857,11 @@ def get_providers_v1(
             "max_distance_km": row["max_distance_km"],
             "latitude": row["latitude"],
             "longitude": row["longitude"],
+            "avatar_url": row["avatar_url"],
         })
 
     return {"status": "success", "data": providers}
+
 
 
 

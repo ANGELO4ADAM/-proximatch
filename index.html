@@ -376,7 +376,12 @@
                                     <input type="number" id="reg-rate" value="35" class="w-full bg-black/40 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none">
                                 </div>
                             </div>
+                            <div>
+                                <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Photo / Avatar (URL)</label>
+                                <input type="url" id="reg-avatar" placeholder="https://images.unsplash.com/..." value="https://images.unsplash.com/photo-1534528741775-53994a69daeb" class="w-full bg-black/40 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none">
+                            </div>
                         </div>
+
                         <div>
                             <label class="block text-xs font-mono uppercase text-gray-400 mb-1">E-mail</label>
                             <input type="email" id="reg-email" required placeholder="contact@exemple.fr" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
@@ -464,6 +469,7 @@
             const name = document.getElementById('reg-name').value.trim();
             const skill = isProvider ? document.getElementById('reg-skill').value : 'Client';
             const rate = isProvider ? parseFloat(document.getElementById('reg-rate').value) : 35.0;
+            const avatarUrl = isProvider && document.getElementById('reg-avatar') ? document.getElementById('reg-avatar').value.trim() : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb';
 
             const payload = {
                 email,
@@ -474,7 +480,8 @@
                 hourly_rate: rate,
                 max_distance_km: 30,
                 latitude: defaultLat,
-                longitude: defaultLon
+                longitude: defaultLon,
+                avatar_url: avatarUrl
             };
 
             try {
@@ -621,12 +628,16 @@
                     if (counter) counter.innerText = `${result.data.length} trouvés`;
                     grid.innerHTML = '';
                     result.data.forEach(provider => {
+                        const avatar = provider.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb";
                         grid.innerHTML += `
-                            <div class="bg-gray-900/50 border border-gray-800 p-4 rounded-2xl flex flex-col justify-between hover:border-amber-500/50 transition group">
+                            <div class="bg-gray-900/50 border border-gray-800 p-4 rounded-2xl flex flex-col justify-between hover:border-amber-500/50 transition group shadow-lg">
                                 <div>
-                                    <div class="flex justify-between items-start mb-2">
-                                        <h3 class="font-bold text-sm text-white group-hover:text-amber-400 transition">${escapeHtml(provider.name)}</h3>
-                                        <span class="bg-amber-500/10 text-amber-400 text-[10px] font-mono px-2 py-0.5 rounded-full">${escapeHtml(provider.skill)}</span>
+                                    <div class="flex items-center space-x-3 mb-3">
+                                        <img src="${avatar}" alt="${escapeHtml(provider.name)}" class="w-10 h-10 rounded-full object-cover border border-gray-700 shadow-md">
+                                        <div>
+                                            <h3 class="font-bold text-sm text-white group-hover:text-amber-400 transition">${escapeHtml(provider.name)}</h3>
+                                            <span class="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">${escapeHtml(provider.skill)}</span>
+                                        </div>
                                     </div>
                                     <p class="text-xs text-gray-400 mb-4">Intervention • Rayon ${provider.max_distance_km} km</p>
                                 </div>
@@ -646,6 +657,7 @@
                 grid.innerHTML = '<p class="text-xs text-red-400 col-span-full">Erreur de connexion au serveur.</p>';
             }
         }
+
 
 
         function quickFilter(category) {
