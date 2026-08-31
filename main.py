@@ -413,17 +413,21 @@ def require_role(allowed_roles: list[str]):
 # ----------------------------------------------------------------------
 class UserRegister(BaseModel):
     email: str = Field(..., description="Adresse e-mail valide")
-    password: str = Field(..., min_length=6, description="Mot de passe (minimum 6 caractères)")
+    password: str = Field(..., description="Mot de passe")
     first_name: Optional[str] = Field(None, description="Prénom")
     last_name: Optional[str] = Field(None, description="Nom")
-    name: Optional[str] = Field(None, description="Nom complet ou Enseigne")
+    name: Optional[str] = Field("Utilisateur", description="Nom complet ou Enseigne")
     phone: Optional[str] = Field("0600000000", description="Numéro de téléphone")
-    role: Optional[str] = Field("customer", description="Rôle : 'customer', 'provider', 'admin'")
-    skill: Optional[str] = Field(None, description="Spécialité / Métier pour prestataire")
+    role: Optional[str] = Field("client", description="Rôle : 'client', 'customer', 'provider', 'admin'")
+    skill: Optional[str] = Field("Général", description="Spécialité / Métier pour prestataire")
     hourly_rate: Optional[float] = Field(35.0, description="Tarif horaire")
-    max_distance_km: Optional[float] = Field(30.0, description="Rayon d'action en km")
+    max_distance_km: Optional[float] = Field(15.0, description="Rayon d'action en km")
     latitude: Optional[float] = Field(48.8590, description="Latitude")
     longitude: Optional[float] = Field(2.3780, description="Longitude")
+
+
+UserAuth = UserRegister
+
 
 
 
@@ -605,7 +609,8 @@ def register_user(
     display_name = full_name if full_name else f"{first_name} {last_name}".strip()
     phone_val = payload.phone.strip() if payload.phone else "0600000000"
     hashed_password = get_password_hash(payload.password)
-    user_role = payload.role if payload.role in ("customer", "provider", "admin") else "customer"
+    user_role = payload.role if payload.role in ("customer", "provider", "admin", "client") else "customer"
+
 
     cursor.execute(
         """
