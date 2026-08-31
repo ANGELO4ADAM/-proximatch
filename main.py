@@ -7,6 +7,9 @@ import unicodedata
 import httpx
 import json
 import stripe
+from dotenv import load_dotenv
+
+load_dotenv()
 from typing import Dict, List, Optional
 import bcrypt
 from fastapi import (

@@ -10,12 +10,15 @@ import re
 from datetime import datetime
 from typing import Any, Optional
 import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Configuration Meta WhatsApp Cloud API
 WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN", "TON_TOKEN_PERMANENT_META")
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", os.getenv("WHATSAPP_VERIFY_TOKEN", "proximatch_secure_verify_token"))
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID", "TON_PHONE_NUMBER_ID")
-WHATSAPP_API_URL = os.getenv("WHATSAPP_API_URL", f"https://graph.facebook.com/v25.0/{PHONE_NUMBER_ID}/messages")
+WHATSAPP_API_URL = os.getenv("WHATSAPP_API_URL", f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages")
 
 
 # Bannières & Images Haute Résolution par catégorie de service (Unsplash optimisées)
