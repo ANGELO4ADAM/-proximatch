@@ -93,6 +93,7 @@ Le projet dispose d'une suite de tests automatisée complète :
 ./venv/bin/python test_stripe_escrow.py
 ./venv/bin/python test_agenda_slots.py
 ./venv/bin/python test_websocket_chat.py
+./venv/bin/python test_admin_dashboard.py
 ```
 
 ---
@@ -105,6 +106,7 @@ Le projet dispose d'une suite de tests automatisée complète :
 | `POST` | `/token` | Connexion OAuth2 Form (Bearer Token) |
 | `POST` | `/auth/login` | Connexion JSON |
 | `GET` | `/auth/me` | Profil utilisateur connecté |
+| `GET` | `/api/v1/admin/dashboard-stats` | Métriques globales et statistiques consolidées du Dashboard Admin |
 | `POST` | `/requests/ai-parse` | Extraction NLP & Matching instantané |
 | `GET` | `/providers/match-geo` | Recherche de prestataires par GPS & Haversine |
 | `WS` | `/ws/conversations/{id}` | Messagerie temps réel WebSocket bidirectionnelle avec modération en direct |
