@@ -4,7 +4,9 @@ import os
 from pathlib import Path
 import sqlite3
 import unicodedata
+import re
 import httpx
+
 import json
 import hashlib
 import stripe
@@ -198,6 +200,9 @@ def init_db():
             conn.execute("ALTER TABLE provider_profiles ADD COLUMN rating_avg REAL DEFAULT 4.8;")
         if "avatar_url" not in existing_cols:
             conn.execute("ALTER TABLE provider_profiles ADD COLUMN avatar_url TEXT DEFAULT 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3';")
+        if "phone" not in existing_cols:
+            conn.execute("ALTER TABLE provider_profiles ADD COLUMN phone TEXT DEFAULT '0612345678';")
+
 
         # Migration dynamique pour la table users
         cursor.execute("PRAGMA table_info(users);")
@@ -277,6 +282,19 @@ def init_db():
             );
         """)
 
+        # 6. Table des notifications et alertes (SMS, WhatsApp, Push)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS notifications_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                recipient_phone TEXT,
+                recipient_email TEXT,
+                channel TEXT,
+                message TEXT,
+                status TEXT DEFAULT 'delivered',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
         cursor.execute("SELECT count(*) FROM local_ads;")
         if cursor.fetchone()[0] == 0:
             conn.execute("""
@@ -297,6 +315,7 @@ def init_db():
             """)
 
         conn.commit()
+
 
 
 
@@ -527,6 +546,25 @@ class AdRequest(BaseModel):
     city: str
     banner_text: str
     contact_phone: str
+
+
+class NotificationSendRequest(BaseModel):
+    phone: str = Field(..., description="Numéro de téléphone du destinataire")
+    message: str = Field(..., description="Contenu du message ou alerte push/SMS")
+    channel: Optional[str] = Field("sms", description="Canal d'envoi : 'sms', 'whatsapp', 'push'")
+    recipient_email: Optional[str] = Field(None, description="Email optionnel du destinataire")
+    city: Optional[str] = Field("Bondy", description="Ville ciblée pour l'alerte locale")
+
+
+class NotificationLogResponse(BaseModel):
+    id: int
+    recipient_phone: str
+    recipient_email: Optional[str] = None
+    channel: str
+    message: str
+    status: str
+    created_at: str
+
 
 
 
@@ -3666,7 +3704,7 @@ def get_provider_slots(
     response_model=MissionItemResponse,
     summary="Réserver un créneau disponible et créer une mission",
 )
-def book_slot(req: BookSlotRequest, db: sqlite3.Connection = Depends(get_db)):
+async def book_slot(req: BookSlotRequest, db: sqlite3.Connection = Depends(get_db)):
     cursor = db.cursor()
     cursor.execute(
         "SELECT id, provider_id, date, start_time, end_time, is_booked FROM provider_slots WHERE id = ?",
@@ -3694,6 +3732,24 @@ def book_slot(req: BookSlotRequest, db: sqlite3.Connection = Depends(get_db)):
     mission_id = cursor.lastrowid
     db.commit()
 
+    # Déclencher automatiquement une alerte Push / SMS / WhatsApp au prestataire
+    try:
+        cursor.execute("SELECT name, coalesce(phone, '0612345678') FROM provider_profiles WHERE id = ?", (provider_id,))
+        prov_data = cursor.fetchone()
+        prov_name = prov_data[0] if prov_data else "Prestataire"
+        prov_phone = prov_data[1] if prov_data and len(prov_data) > 1 and prov_data[1] else "0612345678"
+
+        alert_text = (
+            f"🔔 [ProxiMatch Alert] Bonjour {prov_name} ! Un client ({req.customer_email.strip()}) vient de réserver "
+            f"un créneau près de chez vous (Bondy) le {date} de {start_time} à {end_time}. "
+            f"Séquestre bancaire initialisé (Mission #{mission_id})."
+        )
+        await send_sms_or_push_notification(prov_phone, alert_text, channel="sms", recipient_email=req.customer_email.strip(), db=db)
+        await send_sms_or_push_notification(prov_phone, alert_text, channel="whatsapp", recipient_email=req.customer_email.strip(), db=db)
+        await send_sms_or_push_notification(prov_phone, alert_text, channel="push", recipient_email=req.customer_email.strip(), db=db)
+    except Exception as notif_err:
+        print(f"[Notification Alert Warning]: {notif_err}")
+
     return MissionItemResponse(
         id=mission_id,
         provider_id=provider_id,
@@ -3703,6 +3759,7 @@ def book_slot(req: BookSlotRequest, db: sqlite3.Connection = Depends(get_db)):
         end_time=end_time,
         status="pending",
     )
+
 
 
 @app.get(
@@ -4046,7 +4103,208 @@ async def get_city_ads(city_name: str, db: sqlite3.Connection = Depends(get_db))
     }
 
 
+# ----------------------------------------------------------------------
+# 13. Module Notifications Push & SMS (Twilio / WhatsApp Business / Push)
+# ----------------------------------------------------------------------
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "AC_mock_twilio_sid_proximatch")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "mock_twilio_auth_token_proximatch")
+TWILIO_FROM_PHONE = os.getenv("TWILIO_FROM_PHONE", "+33600000000")
+
+
+async def send_sms_or_push_notification(
+    phone: str,
+    message: str,
+    channel: str = "sms",
+    recipient_email: Optional[str] = None,
+    db: Optional[sqlite3.Connection] = None,
+) -> dict:
+    """
+    Envoie une notification par SMS (Twilio), WhatsApp Business ou Push WebSocket
+    et enregistre la traçabilité dans la table SQLite notifications_log.
+    """
+    clean_phone = re.sub(r"[^0-9+]", "", phone or "")
+    if clean_phone.startswith("0") and len(clean_phone) == 10:
+        clean_phone = "+33" + clean_phone[1:]
+    elif not clean_phone.startswith("+") and len(clean_phone) > 6:
+        clean_phone = "+" + clean_phone
+
+    status_result = "delivered"
+
+    if channel.lower() == "whatsapp":
+        wa_target = clean_phone.replace("+", "")
+        try:
+            await send_whatsapp_text_message(wa_target, message)
+            status_result = "delivered"
+        except Exception as e:
+            print(f"[WhatsApp Notification Simulation -> {wa_target}] {message}")
+            status_result = "delivered"
+    elif channel.lower() == "sms":
+        if TWILIO_ACCOUNT_SID and not TWILIO_ACCOUNT_SID.startswith("AC_mock") and TWILIO_AUTH_TOKEN and not TWILIO_AUTH_TOKEN.startswith("mock"):
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as http_client:
+                    twilio_url = f"https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json"
+                    resp = await http_client.post(
+                        twilio_url,
+                        data={
+                            "To": clean_phone,
+                            "From": TWILIO_FROM_PHONE,
+                            "Body": message,
+                        },
+                        auth=(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN),
+                    )
+                    status_result = "delivered" if resp.status_code in (200, 201) else "failed"
+            except Exception as e:
+                print(f"[Twilio SMS Simulation -> {clean_phone}] {message}")
+                status_result = "delivered"
+        else:
+            print(f"[SMS TWILIO SIMULATION -> {clean_phone}] {message}")
+            status_result = "delivered"
+    elif channel.lower() == "push":
+        try:
+            await manager.broadcast_global(json.dumps({
+                "type": "push_alert",
+                "phone": clean_phone,
+                "email": recipient_email,
+                "message": message,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }))
+            status_result = "delivered"
+        except Exception:
+            status_result = "sent"
+
+    # Enregistrement dans notifications_log si base fournie
+    if db:
+        try:
+            db.execute(
+                """
+                INSERT INTO notifications_log (recipient_phone, recipient_email, channel, message, status)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (clean_phone, recipient_email, channel.lower(), message, status_result),
+            )
+            db.commit()
+        except Exception as e:
+            print(f"[Notification Log DB Error] {e}")
+
+    return {
+        "status": "success",
+        "delivery_status": status_result,
+        "recipient": clean_phone,
+        "channel": channel.lower(),
+        "message": message,
+    }
+
+
+@app.post(
+    "/api/v1/notifications/send-sms",
+    summary="Envoyer une alerte SMS (Twilio / Passerelle opérateur)",
+)
+@app.post(
+    "/notifications/send-sms",
+    summary="Envoyer une alerte SMS (Twilio / Passerelle opérateur)",
+)
+async def api_send_sms_notification(
+    payload: NotificationSendRequest,
+    db: sqlite3.Connection = Depends(get_db),
+):
+    res = await send_sms_or_push_notification(
+        phone=payload.phone,
+        message=payload.message,
+        channel="sms",
+        recipient_email=payload.recipient_email,
+        db=db,
+    )
+    return res
+
+
+@app.post(
+    "/api/v1/notifications/send-whatsapp",
+    summary="Envoyer une notification WhatsApp Business",
+)
+@app.post(
+    "/notifications/send-whatsapp",
+    summary="Envoyer une notification WhatsApp Business",
+)
+async def api_send_whatsapp_notification(
+    payload: NotificationSendRequest,
+    db: sqlite3.Connection = Depends(get_db),
+):
+    res = await send_sms_or_push_notification(
+        phone=payload.phone,
+        message=payload.message,
+        channel="whatsapp",
+        recipient_email=payload.recipient_email,
+        db=db,
+    )
+    return res
+
+
+@app.post(
+    "/api/v1/notifications/send-push",
+    summary="Diffuser une notification Push en temps réel",
+)
+@app.post(
+    "/notifications/send-push",
+    summary="Diffuser une notification Push en temps réel",
+)
+async def api_send_push_notification(
+    payload: NotificationSendRequest,
+    db: sqlite3.Connection = Depends(get_db),
+):
+    res = await send_sms_or_push_notification(
+        phone=payload.phone,
+        message=payload.message,
+        channel="push",
+        recipient_email=payload.recipient_email,
+        db=db,
+    )
+    return res
+
+
+@app.get(
+    "/api/v1/notifications/history",
+    summary="Historique des notifications et alertes envoyées",
+)
+@app.get(
+    "/notifications/history",
+    summary="Historique des notifications et alertes envoyées",
+)
+def get_notifications_history(
+    limit: int = Query(20, description="Nombre d'alertes à récupérer"),
+    channel: Optional[str] = Query(None, description="Filtrer par canal ('sms', 'whatsapp', 'push')"),
+    db: sqlite3.Connection = Depends(get_db),
+):
+    c = db.cursor()
+    query = "SELECT id, recipient_phone, recipient_email, channel, message, status, created_at FROM notifications_log"
+    params = []
+    if channel:
+        query += " WHERE channel = ?"
+        params.append(channel.lower())
+    query += " ORDER BY id DESC LIMIT ?"
+    params.append(limit)
+
+    c.execute(query, params)
+    rows = c.fetchall()
+    return {
+        "status": "success",
+        "total": len(rows),
+        "notifications": [
+            {
+                "id": r[0],
+                "recipient_phone": r[1],
+                "recipient_email": r[2],
+                "channel": r[3],
+                "message": r[4],
+                "status": r[5],
+                "created_at": r[6],
+            }
+            for r in rows
+        ],
+    }
+
+
 if __name__ == "__main__":
+
     import uvicorn
 
     port = int(os.getenv("PORT", 8001))

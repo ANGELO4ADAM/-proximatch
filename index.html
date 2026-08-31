@@ -337,12 +337,57 @@
 
         let chatSocket = null;
 
+        function showPushNotificationToast(message, phone) {
+            let container = document.getElementById('push-notifications-toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'push-notifications-toast-container';
+                container.className = 'fixed top-4 right-4 z-50 flex flex-col space-y-2 max-w-sm w-full pointer-events-none';
+                document.body.appendChild(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = 'pointer-events-auto bg-gray-900 border border-amber-500/50 text-white p-3.5 rounded-2xl shadow-2xl flex items-start space-x-3 transform transition-all duration-300 translate-y-[-10px] opacity-0 backdrop-blur-md';
+            toast.innerHTML = `
+                <div class="bg-amber-500/20 text-amber-400 p-2 rounded-xl border border-amber-500/30 flex-shrink-0">
+                    <i class="ph-bold ph-bell-ringing text-lg"></i>
+                </div>
+                <div class="flex-1 text-xs">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-amber-400 font-mono text-[10px] uppercase">Alerte Mission (Bondy)</span>
+                        <span class="text-gray-500 text-[10px]">Instant</span>
+                    </div>
+                    <p class="text-gray-200 leading-relaxed">${escapeHtml(message)}</p>
+                </div>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-[-10px]', 'opacity-0');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-10px]');
+                setTimeout(() => toast.remove(), 300);
+            }, 6500);
+        }
+
         function initWebSocketChat() {
             try {
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
                 chatSocket = new WebSocket(wsProtocol + window.location.host + '/ws/chat');
 
                 chatSocket.onmessage = function(event) {
+                    try {
+                        const parsed = JSON.parse(event.data);
+                        if (parsed && parsed.type === 'push_alert') {
+                            showPushNotificationToast(parsed.message, parsed.phone);
+                            return;
+                        }
+                    } catch (e) {
+                        // Ce n'est pas un JSON, traitement du texte brut ci-dessous
+                    }
+
                     const chatMessages = document.getElementById('chat-messages-container') || document.getElementById('chat-messages');
                     if (chatMessages) {
                         const messageElement = document.createElement('div');
@@ -361,6 +406,7 @@
                 console.error("Erreur init WebSocket:", e);
             }
         }
+
 
         function sendWebSocketMessage() {
             const input = document.getElementById('chat-input-field') || document.getElementById('chat-input');
