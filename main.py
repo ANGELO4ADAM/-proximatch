@@ -10,7 +10,8 @@ import stripe
 from dotenv import load_dotenv
 
 load_dotenv()
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
+
 import bcrypt
 from fastapi import (
     Depends,
@@ -458,9 +459,7 @@ class UserRegister(BaseModel):
 
 
 UserAuth = UserRegister
-
-
-
+RegisterRequest = UserRegister
 
 
 class UserLogin(BaseModel):
@@ -469,14 +468,18 @@ class UserLogin(BaseModel):
 
 
 class UserResponse(BaseModel):
-    id: int
-    role: str
-    first_name: str
-    last_name: str
-    email: str
+    id: Optional[int] = None
+    role: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
     phone: Optional[str] = None
     phone_masked: Optional[str] = None
     created_at: Optional[str] = None
+    status: Optional[str] = "success"
+    message: Optional[str] = None
+    user: Optional[Dict[str, Any]] = None
+
 
 
 class Token(BaseModel):
@@ -642,7 +645,7 @@ def register_user(
     phone_val = payload.phone.strip() if payload.phone else "0600000000"
     hashed_password = get_password_hash(payload.password)
     user_role = payload.role if payload.role in ("customer", "provider", "admin", "client") else "customer"
-
+    db_role = "customer" if user_role in ("client", "customer") else user_role
 
     cursor.execute(
         """
@@ -650,7 +653,7 @@ def register_user(
         VALUES (?, ?, ?, ?, ?, ?)
         """,
         (
-            user_role,
+            db_role,
             first_name,
             last_name,
             payload.email.strip().lower(),
@@ -659,6 +662,7 @@ def register_user(
         ),
     )
     user_id = cursor.lastrowid
+
 
     # Si le rôle est prestataire, enregistrement / indexation dans provider_profiles
     if user_role == "provider":
@@ -689,8 +693,31 @@ def register_user(
 
     db.commit()
 
-    cursor.execute("SELECT id, role, first_name, last_name, email, phone, phone_masked, created_at FROM users WHERE id = ?", (user_id,))
-    return dict(cursor.fetchone())
+    welcome_message = (
+        f"Bienvenue sur ProxiMatch, {display_name} ! "
+        f"Votre inscription en tant que {user_role} est validée. "
+        f"Rappel de sécurité : toutes les prestations doivent transiter par notre système de séquestre Stripe "
+        f"pour garantir vos garanties et la politique anti-désintermédiation. "
+        f"Vous êtes désormais abonné à notre liste de diffusion d'informations de sécurité."
+    )
+
+    phone_masked = f"{phone_val[:2]} ** ** ** {phone_val[-2:]}" if len(phone_val) >= 4 else phone_val
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    return {
+        "status": "success",
+        "message": welcome_message,
+        "user": {"name": display_name, "email": payload.email.strip().lower(), "role": user_role},
+        "id": user_id,
+        "role": user_role,
+        "first_name": first_name,
+        "last_name": last_name,
+        "email": payload.email.strip().lower(),
+        "phone": phone_val,
+        "phone_masked": phone_masked,
+        "created_at": now_iso,
+    }
+
 
 
 

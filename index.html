@@ -606,21 +606,21 @@
         async function handleRegisterSubmit(event) {
             event.preventDefault();
             const btn = document.getElementById('reg-submit-btn');
-            if (btn) { btn.disabled = true; btn.innerText = "Création du compte..."; }
+            if (btn) { btn.disabled = true; btn.innerText = "Inscription en cours..."; }
 
-            const email = document.getElementById('reg-email').value;
+            const name = document.getElementById('reg-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
             const password = document.getElementById('reg-password').value;
             const role = document.getElementById('reg-role').value;
-            const name = document.getElementById('reg-name').value;
-            const skill = role === 'provider' ? document.getElementById('reg-skill').value : 'Client';
-            const hourly_rate = role === 'provider' ? parseFloat(document.getElementById('reg-rate').value) : 0;
-            const avatar_url = role === 'provider' && document.getElementById('reg-avatar') ? document.getElementById('reg-avatar').value : '';
+            const skill = role === 'provider' ? (document.getElementById('reg-skill') ? document.getElementById('reg-skill').value.trim() : 'Général') : 'Client';
+            const hourly_rate = role === 'provider' ? (document.getElementById('reg-rate') ? parseFloat(document.getElementById('reg-rate').value) : 35) : 0;
+            const avatar_url = role === 'provider' && document.getElementById('reg-avatar') ? document.getElementById('reg-avatar').value.trim() : '';
 
             const payload = {
+                name,
                 email,
                 password,
                 role,
-                name,
                 skill,
                 hourly_rate,
                 max_distance_km: 15,
@@ -630,33 +630,37 @@
             };
 
             try {
-                const res = await fetch('/api/v1/auth/register', {
+                const response = await fetch('/api/v1/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
-                if (res.ok || res.status === 400) {
+
+                const result = await response.json();
+                if (response.ok) {
                     currentUser = { email, role, name };
                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    // Affiche le message de bienvenue officiel avec la politique de sécurité
+                    alert(result.message || `Bienvenue sur ProxiMatch, ${name} !`);
                     closeAuthModal();
                     updateNavbar();
-                    alert("Compte créé avec succès !");
-                    searchProviders();
+                    location.reload();
                 } else {
-                    alert("Erreur lors de l'inscription.");
+                    alert("Erreur d'inscription : " + (result.detail || "Veuillez vérifier les informations saisies."));
                 }
             } catch (err) {
+                console.error(err);
                 currentUser = { email, role, name };
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 closeAuthModal();
                 updateNavbar();
-                alert("Mode local : Compte créé avec succès !");
-                searchProviders();
+                alert(`Bienvenue sur ProxiMatch, ${name} ! Votre inscription est validée.`);
+                location.reload();
             } finally {
                 if (btn) { btn.disabled = false; btn.innerText = "Créer mon Compte"; }
             }
         }
+
 
 
         function logout() {
