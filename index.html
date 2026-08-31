@@ -801,11 +801,17 @@
                                 </div>
                                 <div class="flex items-center justify-between pt-3 border-t border-gray-800">
                                     <span class="text-xs font-bold text-white">${provider.hourly_rate} € / h</span>
-                                    <button onclick="openBookingModal(${provider.id}, '${escapeHtml(provider.name)}', ${provider.hourly_rate})" class="bg-gray-800 hover:bg-gray-700 text-white text-xs px-3 py-1.5 rounded-xl transition cursor-pointer font-medium">Réserver</button>
+                                    <div class="flex items-center space-x-2">
+                                        <button onclick="openWhatsAppNegotiation('${provider.phone || '33600000000'}', '${escapeHtml(provider.skill || 'Prestation')}', ${provider.hourly_rate})" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs px-2.5 py-1.5 rounded-xl transition cursor-pointer font-medium flex items-center" title="Négocier sur WhatsApp">
+                                            <i class="ph-bold ph-whatsapp-logo mr-1"></i> Discuter
+                                        </button>
+                                        <button onclick="openBookingModal(${provider.id}, '${escapeHtml(provider.name)}', ${provider.hourly_rate})" class="bg-gray-800 hover:bg-gray-700 text-white text-xs px-3 py-1.5 rounded-xl transition cursor-pointer font-medium">Réserver</button>
+                                    </div>
                                 </div>
                             </div>
                         `;
                     });
+
                 } else {
                     if (counter) counter.innerText = '0 trouvé';
                     grid.innerHTML = '<p class="text-xs text-gray-500 col-span-full">Aucun prestataire trouvé dans ce rayon.</p>';
@@ -936,9 +942,13 @@
                                     <strong style="font-size: 13px; color: #000;">${escapeHtml(provider.name)}</strong><br>
                                     <span style="color: #d97706; font-weight: 700; font-size: 11px;">${escapeHtml(provider.skill)}</span><br>
                                     <span style="color: #4b5563;">Tarif : <strong style="color: #111;">${provider.hourly_rate} €/h</strong>${distText}</span><br>
-                                    <button onclick="openBookingModal(${provider.id}, '${escapeHtml(provider.name)}', ${provider.hourly_rate})" style="margin-top: 6px; background: #f59e0b; color: #000; border: none; padding: 4px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;">Réserver</button>
+                                    <div style="display: flex; gap: 4px; margin-top: 6px;">
+                                        <button onclick="openWhatsAppNegotiation('${provider.phone || '33600000000'}', '${escapeHtml(provider.skill || 'Prestation')}', ${provider.hourly_rate})" style="background: #10b981; color: #fff; border: none; padding: 4px 8px; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1;">Discuter</button>
+                                        <button onclick="openBookingModal(${provider.id}, '${escapeHtml(provider.name)}', ${provider.hourly_rate})" style="background: #f59e0b; color: #000; border: none; padding: 4px 8px; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1;">Réserver</button>
+                                    </div>
                                 </div>
                             `);
+
                         
                         mapMarkers.push(marker);
                     });
@@ -968,7 +978,24 @@
             quickFilter('all');
         }
 
+        function openWhatsAppNegotiation(providerPhone, serviceTitle, defaultPrice) {
+            // Nettoyage du numéro de téléphone (suppression des espaces, tirets, etc.)
+            let cleanPhone = (providerPhone || '33600000000').replace(/[^0-9+]/g, '');
+            
+            // Message pré-rempli pour lancer la négociation de pair à pair
+            let message = encodeURIComponent(
+                `Bonjour ! Je vous contacte via la plateforme pour votre prestation "${serviceTitle}" affichée à ${defaultPrice}€. Est-ce qu'on peut en discuter ou ajuster les modalités ?`
+            );
+            
+            // Construction de l'URL universelle WhatsApp (fonctionne sur mobile et desktop)
+            let whatsappUrl = `https://wa.me/${cleanPhone}?text=${message}`;
+            
+            // Ouverture dans un nouvel onglet
+            window.open(whatsappUrl, '_blank');
+        }
+
         function openBookingModal(providerId, providerName, rate) {
+
             document.getElementById('book-prov-id').value = providerId;
             document.getElementById('book-prov-name').innerText = `Réserver : ${providerName}`;
             document.getElementById('book-rate-display').innerText = `${rate}.00 € / h`;
