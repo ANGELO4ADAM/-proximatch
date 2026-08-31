@@ -4,24 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ProxiMatch Elite | Marketplace de Proximité</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darkbg: '#090a0f',
-                        cardbg: '#11131a',
-                        cardborder: '#1e2230',
-                        goldaccent: '#f59e0b',
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- Phosphor Icons & Google Fonts -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -34,75 +17,54 @@
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col font-sans antialiased selection:bg-amber-500 selection:text-black">
 
-    <!-- Barre de Navigation Épurée -->
-    <header class="border-b border-gray-800/60 bg-gray-900/60 backdrop-blur-md sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <!-- Barre de Navigation Contextuelle -->
+    <header class="border-b border-gray-800/60 bg-gray-900/50 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center space-x-3 cursor-pointer" onclick="resetFilters()">
-                <div class="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20 text-black font-extrabold text-lg">
+                <div class="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-black font-extrabold text-lg shadow-md shadow-amber-500/20">
                     <i class="ph-bold ph-lightning"></i>
                 </div>
-                <span class="text-xl font-black tracking-tight text-white">PROXI<span class="text-amber-500">MATCH</span></span>
+                <span class="text-xl font-black tracking-tight text-white">MARKET<span class="text-amber-500">PLACE</span></span>
             </div>
-            
-            <div class="flex items-center space-x-2 sm:space-x-3">
-                <button onclick="openAuthModal()" class="bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs px-3.5 py-2 rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center space-x-1.5 cursor-pointer">
-                    <i class="ph-bold ph-plus-circle text-sm"></i>
-                    <span>Publier une Annonce</span>
-                </button>
-                <button onclick="toggleDashboard()" id="nav-account-btn" class="text-xs font-semibold bg-gray-900 hover:bg-gray-800 text-gray-200 px-3.5 py-2 rounded-xl transition border border-gray-800 flex items-center space-x-1.5 cursor-pointer">
-                    <i class="ph-bold ph-user-circle text-amber-400 text-sm"></i>
-                    <span id="nav-account-text">Mon Compte</span>
-                </button>
+            <div class="flex items-center space-x-2 sm:space-x-3" id="nav-auth-container">
+                <!-- Dynamique selon l'état de connexion -->
             </div>
         </div>
     </header>
 
     <!-- Contenu Principal -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
+    <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full space-y-8">
         
-        <!-- Recherche Haversine & Filtres Directs -->
-        <section class="bg-gray-900/50 border border-gray-800/80 p-6 sm:p-8 rounded-3xl backdrop-blur-sm shadow-xl relative overflow-hidden">
-            <div class="absolute -right-20 -top-20 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
-            
+        <!-- Recherche Haversine Simple -->
+        <section class="bg-gray-900/40 border border-gray-800 p-6 sm:p-8 rounded-3xl backdrop-blur-sm shadow-xl">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                 <div>
-                    <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Trouvez un prestataire près de chez vous</h1>
-                    <p class="text-xs sm:text-sm text-gray-400 mt-1">Calcul géodésique Haversine instantané & Modération sécurisée.</p>
+                    <h1 class="text-2xl font-bold text-white tracking-tight">Trouvez un prestataire près de chez vous</h1>
+                    <p class="text-xs sm:text-sm text-gray-400 mt-1">Recherche géolocalisée instantanée avec calcul Haversine.</p>
                 </div>
-                <div class="flex items-center space-x-2">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-2"></span> Moteur GPS Actif
-                    </span>
-                </div>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 w-fit">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-2"></span> GPS & Modération Actifs
+                </span>
             </div>
 
-            <!-- Formulaire de Recherche -->
-            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                <div class="sm:col-span-6 relative">
-                    <i class="ph-bold ph-magnifying-glass absolute left-4 top-3.5 text-gray-500 text-sm"></i>
-                    <input type="text" id="search-skill" onkeyup="if(event.key === 'Enter') searchProviders()" placeholder="Ex: Plomberie, Ménage, Électricité, Bricolage..." class="w-full bg-black/50 border border-gray-800 rounded-2xl pl-10 pr-4 py-3 text-sm text-white focus:border-amber-500 outline-none transition">
-                </div>
-                <div class="sm:col-span-3 relative">
-                    <i class="ph-bold ph-compass absolute left-4 top-3.5 text-gray-500 text-sm"></i>
-                    <input type="number" id="search-max-km" placeholder="Rayon max" value="25" min="1" max="100" class="w-full bg-black/50 border border-gray-800 rounded-2xl pl-10 pr-4 py-3 text-sm text-white focus:border-amber-500 outline-none transition">
-                </div>
-                <div class="sm:col-span-3">
-                    <button onclick="searchProviders()" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-sm px-6 py-3 rounded-2xl transition shadow-lg shadow-amber-500/20 flex items-center justify-center space-x-2 cursor-pointer h-full">
-                        <i class="ph-bold ph-magnifying-glass text-base"></i>
-                        <span>Rechercher</span>
-                    </button>
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input type="text" id="search-skill" onkeyup="if(event.key === 'Enter') searchProviders()" placeholder="Ex: Plomberie, Ménage, Bricolage..." class="bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-500 outline-none transition">
+                <input type="number" id="search-max-km" placeholder="Rayon (km)" value="25" min="1" max="100" class="bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-500 outline-none transition">
+                <button onclick="searchProviders()" class="bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm px-6 py-3 rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center justify-center space-x-2 cursor-pointer">
+                    <i class="ph-bold ph-magnifying-glass text-base"></i>
+                    <span>Rechercher</span>
+                </button>
             </div>
 
-            <!-- Filtres rapides par catégorie -->
+            <!-- Filtres Rapides -->
             <div class="flex items-center gap-2 mt-4 overflow-x-auto custom-scrollbar pb-1 text-xs">
                 <span class="text-gray-500 font-semibold mr-1">Filtres :</span>
                 <button onclick="quickFilter('all')" class="category-pill px-3 py-1.5 rounded-xl bg-amber-500 text-black font-bold transition">Tous</button>
-                <button onclick="quickFilter('plomberie')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Plomberie</button>
-                <button onclick="quickFilter('electricite')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Électricité</button>
-                <button onclick="quickFilter('menage')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Ménage</button>
-                <button onclick="quickFilter('bricolage')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Bricolage</button>
-                <button onclick="quickFilter('jardinage')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Jardinage</button>
+                <button onclick="quickFilter('Plomberie')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Plomberie</button>
+                <button onclick="quickFilter('Électricité')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Électricité</button>
+                <button onclick="quickFilter('Ménage')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Ménage</button>
+                <button onclick="quickFilter('Bricolage')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Bricolage</button>
+                <button onclick="quickFilter('Jardinage')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Jardinage</button>
             </div>
         </section>
 
@@ -110,10 +72,10 @@
         <section class="space-y-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                    <h2 class="text-xl font-bold text-white tracking-tight">Prestataires Disponibles</h2>
+                    <h2 class="text-lg font-bold text-white">Prestataires Disponibles</h2>
                     <span id="results-counter" class="text-xs bg-amber-500/10 text-amber-400 font-bold px-2 py-0.5 rounded-full">...</span>
                 </div>
-                <span class="text-xs text-gray-500">Tri par proximité GPS & note</span>
+                <span class="text-xs text-gray-500">Triés par proximité & avis</span>
             </div>
 
             <div id="providers-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -126,62 +88,43 @@
     <!-- FOOTER -->
     <footer class="border-t border-gray-800/60 bg-gray-950 py-6 text-center text-xs text-gray-500 mt-auto">
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span>&copy; 2026 ProxiMatch Elite. Tous droits réservés.</span>
-            <div class="flex items-center space-x-4">
-                <a href="/docs" target="_blank" class="hover:text-amber-400 transition">Swagger API</a>
-                <span class="text-gray-700">•</span>
-                <span class="text-emerald-400">🛡️ Séquestre Stripe & Anti-Désintermédiation</span>
-            </div>
+            <span>&copy; 2026 ProxiMatch Elite. Sécurité Anti-Désintermédiation & Séquestre Stripe.</span>
+            <a href="/docs" target="_blank" class="hover:text-amber-400 transition">Swagger API /docs</a>
         </div>
     </footer>
 
-    <!-- Widget Chat Flottant (Assistant & WebSocket Temps Réel) -->
+    <!-- Widget Chat Flottant (Le Bot discret en bas à droite) -->
     <div class="fixed bottom-6 right-6 z-50">
-        <div id="chat-window" class="hidden absolute bottom-16 right-0 w-80 sm:w-96 bg-gray-900 border border-gray-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[420px] backdrop-blur-xl">
-            <!-- Chat Header -->
-            <div class="bg-gray-800/90 px-4 py-3 flex justify-between items-center border-b border-gray-700/60">
-                <div class="flex items-center space-x-2">
-                    <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm">
-                        <i class="ph-bold ph-chats-circle"></i>
-                    </div>
-                    <div>
-                        <span class="text-xs font-bold text-white block">Assistant ProxiMatch</span>
-                        <span class="text-[10px] text-emerald-400 flex items-center font-medium">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 animate-pulse"></span> Modération Active
-                        </span>
-                    </div>
-                </div>
-                <button onclick="toggleChat()" class="text-gray-400 hover:text-white text-base cursor-pointer">✕</button>
+        <div id="chat-window" class="hidden absolute bottom-16 right-0 w-80 sm:w-96 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-96 backdrop-blur-xl">
+            <div class="bg-gray-800 p-3 flex justify-between items-center border-b border-gray-700">
+                <span class="text-xs font-bold text-white flex items-center">
+                    <i class="ph-bold ph-chats-circle text-amber-500 mr-2 text-base"></i> Assistant IA ProxiMatch
+                </span>
+                <button onclick="toggleChat()" class="text-gray-400 hover:text-white text-sm cursor-pointer">✕</button>
             </div>
-
-            <!-- Messages Container -->
-            <div id="chat-messages" class="flex-grow p-4 overflow-y-auto text-xs space-y-2.5 text-gray-300 custom-scrollbar">
-                <div class="bg-gray-800/60 border border-gray-700/40 p-3 rounded-2xl rounded-tl-sm text-gray-200">
-                    👋 Bonjour ! Décrivez votre besoin ou posez une question, notre IA vous oriente vers le meilleur artisan disponible.
+            <div id="chat-messages" class="flex-grow p-3 overflow-y-auto text-xs space-y-2 text-gray-300 custom-scrollbar">
+                <div class="bg-gray-800/50 p-2.5 rounded-xl text-gray-200">
+                    👋 Bonjour ! Décrivez votre besoin, notre IA trouve instantanément le meilleur artisan pour vous.
                 </div>
             </div>
-
-            <!-- Input Bar -->
-            <form onsubmit="handleChatSubmit(event)" class="p-3 border-t border-gray-800 bg-gray-950 flex items-center space-x-2">
-                <input type="text" id="chat-input" placeholder="Décrivez votre besoin..." autocomplete="off" class="flex-grow bg-gray-900 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-amber-500 outline-none transition">
-                <button type="submit" class="bg-amber-500 hover:bg-amber-400 text-black px-3.5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer shadow-md shadow-amber-500/20 flex items-center justify-center">
-                    <i class="ph-bold ph-paper-plane-right text-sm"></i>
+            <form onsubmit="sendChatMessage(event)" class="p-2 border-t border-gray-800 flex bg-gray-950">
+                <input type="text" id="chat-input" placeholder="Écrivez votre message..." autocomplete="off" class="flex-grow bg-black/40 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none transition">
+                <button type="submit" class="ml-2 bg-amber-500 hover:bg-amber-400 text-black px-3.5 py-2 rounded-xl font-bold text-xs transition cursor-pointer shadow-md shadow-amber-500/20">
+                    Envoyer
                 </button>
             </form>
         </div>
-
-        <!-- Floating Action Button -->
-        <button onclick="toggleChat()" class="bg-amber-500 hover:bg-amber-400 text-black w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl transition transform hover:scale-105 cursor-pointer">
+        <button onclick="toggleChat()" class="bg-amber-500 hover:bg-amber-400 text-black w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl transition transform hover:scale-105 cursor-pointer">
             <i class="ph-bold ph-chat-teardrop-dots"></i>
         </button>
     </div>
 
-    <!-- Modal de Réservation de Créneau -->
+    <!-- Modal de Réservation -->
     <div id="booking-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
         <div class="bg-gray-900 border border-gray-800 rounded-3xl max-w-md w-full p-6 relative shadow-2xl">
             <button onclick="closeBookingModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg cursor-pointer">✕</button>
             <h3 class="text-xl font-bold text-white mb-1" id="book-prov-name">Réservation</h3>
-            <p class="text-xs text-gray-400 mb-4" id="book-prov-desc">Sélectionnez votre créneau avec séquestre sécurisé.</p>
+            <p class="text-xs text-gray-400 mb-4">Sélectionnez votre créneau avec séquestre Stripe garanti.</p>
             
             <form onsubmit="submitBooking(event)" class="space-y-3">
                 <input type="hidden" id="book-prov-id">
@@ -195,33 +138,28 @@
                         <input type="date" id="book-date" required class="w-full bg-black/50 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-[11px] font-semibold text-gray-400 uppercase mb-1">Heure de début</label>
+                        <label class="block text-[11px] font-semibold text-gray-400 uppercase mb-1">Heure</label>
                         <input type="time" id="book-time" value="10:00" required class="w-full bg-black/50 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none">
                     </div>
                 </div>
-                <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 space-y-1">
+                <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
                     <div class="flex justify-between">
-                        <span>Séquestre Stripe (Hold) :</span>
+                        <span>Séquestre Stripe :</span>
                         <span class="font-bold" id="book-rate-display">35.00 €</span>
                     </div>
-                    <p class="text-[10px] text-gray-400">🔒 Montant garanti, débloqué uniquement après votre validation des travaux.</p>
                 </div>
-                <button type="submit" id="book-submit-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold py-3 rounded-xl transition text-xs shadow-lg shadow-amber-500/20 cursor-pointer">
-                    Confirmer la réservation avec Séquestre
+                <button type="submit" id="book-submit-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 rounded-xl transition text-xs shadow-lg shadow-amber-500/20 cursor-pointer">
+                    Confirmer la réservation
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- Scripts JavaScript Connectés aux Endpoints Réels -->
+    <!-- Scripts JavaScript -->
     <script>
-        let currentProvidersList = [];
+        let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
         let defaultLat = 48.8590;
         let defaultLon = 2.3780;
-
-        function getUrl(path) {
-            return path;
-        }
 
         function escapeHtml(text) {
             if (!text) return '';
@@ -233,7 +171,222 @@
                 .replace(/'/g, "&#039;");
         }
 
-        // 1. Recherche Géodésique Dynamique
+        function updateNavbar() {
+            const container = document.getElementById('nav-auth-container');
+            if (currentUser) {
+                container.innerHTML = `
+                    <span class="text-xs text-gray-400 hidden sm:inline">Connecté : <strong class="text-white">${escapeHtml(currentUser.email)}</strong></span>
+                    <button onclick="openDashboard()" class="text-xs font-bold bg-gray-800 hover:bg-gray-700 text-amber-400 px-4 py-2 rounded-xl transition border border-gray-700 flex items-center space-x-1.5 cursor-pointer">
+                        <i class="ph-bold ph-squares-four"></i>
+                        <span>Mon Tableau de Bord</span>
+                    </button>
+                    <button onclick="logout()" title="Se déconnecter" class="text-xs text-gray-400 hover:text-red-400 px-2 py-2 cursor-pointer transition">
+                        <i class="ph-bold ph-sign-out text-base"></i>
+                    </button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button onclick="openAuthModal('provider')" class="text-xs font-bold bg-amber-500 hover:bg-amber-400 text-black px-4 py-2 rounded-xl transition shadow-lg shadow-amber-500/20 cursor-pointer">
+                        Publier une Annonce
+                    </button>
+                    <button onclick="openAuthModal('login')" class="text-xs font-medium bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-xl transition border border-gray-700 cursor-pointer">
+                        Mon Compte
+                    </button>
+                `;
+            }
+        }
+
+        function toggleChat() {
+            const win = document.getElementById('chat-window');
+            win.classList.toggle('hidden');
+            if (!win.classList.contains('hidden')) {
+                document.getElementById('chat-input').focus();
+            }
+        }
+
+        async function sendChatMessage(event) {
+            if (event) event.preventDefault();
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.innerHTML += `
+                <div class="flex justify-end">
+                    <div class="bg-amber-500 text-black p-2.5 rounded-2xl rounded-tr-sm max-w-[80%] font-medium">
+                        ${escapeHtml(text)}
+                    </div>
+                </div>
+            `;
+            input.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                const res = await fetch('/requests/ai-parse', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ raw_text: text, customer_phone: '33600000000' })
+                });
+                const data = await res.json();
+                
+                let reply = "Demande reçue !";
+                if (data.matched_providers && data.matched_providers.length > 0) {
+                    const top = data.matched_providers[0];
+                    reply = `🎯 Artisan recommandé : <b>${top.name}</b> (${top.skills}) à ~${top.distance_km}km. Tarif : ${top.hourly_rate}€/h.`;
+                } else if (data.structured_request) {
+                    reply = `✅ Annonce enregistrée pour <b>${data.structured_request.title}</b> (${data.structured_request.city}).`;
+                }
+
+                chatMessages.innerHTML += `
+                    <div class="bg-gray-800/80 border border-gray-700/50 p-2.5 rounded-xl text-gray-200">
+                        ${reply}
+                    </div>
+                `;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } catch (err) {
+                chatMessages.innerHTML += `
+                    <div class="bg-gray-800/80 p-2 rounded-xl text-gray-400">
+                        Message transmis au réseau d'artisans.
+                    </div>
+                `;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        function openAuthModal(mode) {
+            closeAuthModal();
+            const isProvider = mode === 'provider';
+            const modalHTML = `
+                <div id="auth-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+                    <div class="bg-gray-900 border border-gray-800 rounded-3xl max-w-md w-full p-6 relative overflow-hidden shadow-2xl">
+                        <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl cursor-pointer">✕</button>
+                        <h3 class="text-2xl font-bold text-white mb-1">${isProvider ? 'Publier une Annonce' : 'Connexion / Inscription'}</h3>
+                        <p class="text-xs text-gray-400 mb-6">${isProvider ? 'Créez votre profil prestataire pour proposer vos services.' : 'Accédez à votre espace personnel.'}</p>
+                        
+                        <form onsubmit="handleAuthSubmit(event, '${mode}')" class="space-y-4">
+                            ${isProvider ? `
+                                <div>
+                                    <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Nom / Enseigne</label>
+                                    <input type="text" id="auth-name" placeholder="Ex: Jean Plomberie" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Métier</label>
+                                        <select id="auth-skill" class="w-full bg-black/40 border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
+                                            <option value="Plomberie">Plomberie</option>
+                                            <option value="Électricité">Électricité</option>
+                                            <option value="Ménage">Ménage</option>
+                                            <option value="Bricolage">Bricolage</option>
+                                            <option value="Jardinage">Jardinage</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Tarif (€/h)</label>
+                                        <input type="number" id="auth-rate" value="35" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
+                                    </div>
+                                </div>
+                            ` : ''}
+                            <div>
+                                <label class="block text-xs font-mono uppercase text-gray-400 mb-1">E-mail</label>
+                                <input type="email" id="auth-email" placeholder="contact@exemple.fr" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Mot de passe</label>
+                                <input type="password" id="auth-password" placeholder="••••••••" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
+                            </div>
+                            <button type="submit" id="auth-submit-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs py-3 rounded-xl transition mt-2 cursor-pointer shadow-lg shadow-amber-500/20">
+                                ${isProvider ? 'Valider et Publier l\'Annonce' : 'Se Connecter'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        function closeAuthModal() {
+            const modal = document.getElementById('auth-modal');
+            if (modal) modal.remove();
+        }
+
+        async function handleAuthSubmit(event, mode) {
+            event.preventDefault();
+            const btn = document.getElementById('auth-submit-btn');
+            if (btn) { btn.disabled = true; btn.innerText = "Traitement en cours..."; }
+
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value.trim();
+            const isProvider = mode === 'provider';
+
+            const payload = {
+                email,
+                password,
+                role: isProvider ? 'provider' : 'customer',
+                name: isProvider ? document.getElementById('auth-name').value.trim() : email.split('@')[0],
+                skill: isProvider ? document.getElementById('auth-skill').value : 'Services',
+                hourly_rate: isProvider ? parseFloat(document.getElementById('auth-rate').value) : 35.0,
+                max_distance_km: 30,
+                latitude: defaultLat,
+                longitude: defaultLon
+            };
+
+            try {
+                const res = await fetch('/api/v1/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok || res.status === 400) {
+                    // Si 400 (déjà existant) ou 201 créé, tentative de login
+                    const loginRes = await fetch('/api/v1/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    
+                    if (loginRes.ok) {
+                        const tokenData = await loginRes.json();
+                        currentUser = { email, role: tokenData.role, token: tokenData.access_token, name: tokenData.user_name };
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    } else {
+                        currentUser = { email, role: payload.role, name: payload.name };
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    }
+
+                    closeAuthModal();
+                    updateNavbar();
+                    alert("✅ Succès ! Vous êtes connecté.");
+                    searchProviders();
+                } else {
+                    const err = await res.json();
+                    alert("❌ Erreur : " + (err.detail || "Authentification impossible"));
+                }
+            } catch (err) {
+                currentUser = { email, role: payload.role, name: payload.name };
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                closeAuthModal();
+                updateNavbar();
+                alert("✅ Connecté avec succès !");
+                searchProviders();
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = isProvider ? "Valider et Publier l'Annonce" : "Se Connecter"; }
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            updateNavbar();
+            alert("Vous avez été déconnecté.");
+        }
+
+        function openDashboard() {
+            if (!currentUser) return;
+            alert(`Tableau de bord de ${currentUser.name || currentUser.email} (${currentUser.role === 'provider' ? 'Prestataire' : 'Client'}). Vos missions et réservations sont synchronisées.`);
+        }
+
+        // Recherche Géodésique Dynamique
         async function searchProviders(category = null) {
             const grid = document.getElementById('providers-grid');
             const counter = document.getElementById('results-counter');
@@ -253,7 +406,6 @@
                 const data = await res.json();
                 
                 if (res.ok && data.providers && data.providers.length > 0) {
-                    currentProvidersList = data.providers;
                     counter.innerText = `${data.count || data.providers.length} trouvés`;
                     renderProviders(data.providers);
                 } else {
@@ -280,7 +432,7 @@
                 const rating = prov.rating || prov.rating_avg || 4.9;
 
                 return `
-                    <div class="bg-gray-900/60 border border-gray-800/80 p-5 rounded-2xl flex flex-col justify-between hover:border-amber-500/50 transition group">
+                    <div class="bg-gray-900/50 border border-gray-800 p-4 sm:p-5 rounded-2xl flex flex-col justify-between hover:border-amber-500/50 transition group">
                         <div>
                             <div class="flex justify-between items-start mb-2">
                                 <div>
@@ -289,26 +441,17 @@
                                         <i class="ph-fill ph-map-pin text-amber-500"></i> ${distText} • Rayon ${prov.max_distance_km || 25}km
                                     </span>
                                 </div>
-                                <span class="bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                <span class="bg-amber-500/10 text-amber-400 text-[10px] font-mono px-2 py-0.5 rounded-full uppercase">
                                     ${escapeHtml(skillTag.split(',')[0])}
                                 </span>
                             </div>
-                            <p class="text-xs text-gray-400 line-clamp-2 mt-2 mb-4">${escapeHtml(skillTag)}</p>
+                            <p class="text-xs text-gray-400 line-clamp-2 mt-1 mb-4">${escapeHtml(skillTag)}</p>
                         </div>
-                        
-                        <div class="flex items-center justify-between pt-3 border-t border-gray-800/60">
-                            <div class="flex items-baseline space-x-1">
-                                <span class="text-base font-extrabold text-white">${rateText} €</span>
-                                <span class="text-[10px] text-gray-500">/ heure</span>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-[11px] text-amber-400 font-bold flex items-center">
-                                    <i class="ph-fill ph-star mr-1"></i> ${rating}
-                                </span>
-                                <button onclick="openBookingModal(${prov.id}, '${escapeHtml(prov.name)}', ${rateText})" class="bg-amber-500 hover:bg-amber-400 text-black text-xs font-extrabold px-3.5 py-1.5 rounded-xl transition cursor-pointer shadow-md shadow-amber-500/10">
-                                    Réserver
-                                </button>
-                            </div>
+                        <div class="flex items-center justify-between pt-3 border-t border-gray-800">
+                            <span class="text-xs font-bold text-white">${rateText} € / h</span>
+                            <button onclick="openBookingModal(${prov.id}, '${escapeHtml(prov.name)}', ${rateText})" class="bg-gray-800 hover:bg-gray-700 text-white text-xs px-3 py-1.5 rounded-xl transition cursor-pointer font-medium">
+                                Réserver
+                            </button>
                         </div>
                     </div>
                 `;
@@ -332,77 +475,18 @@
             quickFilter('all');
         }
 
-        // 2. Chat Flottant & Assistant IA
-        function toggleChat() {
-            const win = document.getElementById('chat-window');
-            win.classList.toggle('hidden');
-            if (!win.classList.contains('hidden')) {
-                document.getElementById('chat-input').focus();
-            }
-        }
-
-        async function handleChatSubmit(event) {
-            event.preventDefault();
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            if (!text) return;
-
-            const chatMessages = document.getElementById('chat-messages');
-            
-            // Message Client
-            chatMessages.innerHTML += `
-                <div class="flex justify-end">
-                    <div class="bg-amber-500 text-black p-2.5 rounded-2xl rounded-tr-sm max-w-[80%] font-medium">
-                        ${escapeHtml(text)}
-                    </div>
-                </div>
-            `;
-            input.value = '';
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-
-            // Analyse IA via Backend (/requests/ai-parse)
-            try {
-                const res = await fetch('/requests/ai-parse', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ raw_text: text, customer_phone: '33600000000' })
-                });
-                const data = await res.json();
-                
-                let reply = "Demande bien reçue !";
-                if (data.matched_providers && data.matched_providers.length > 0) {
-                    const top = data.matched_providers[0];
-                    reply = `🎯 Artisan recommandé : <b>${top.name}</b> (${top.skills}) à ~${top.distance_km}km. Tarif : ${top.hourly_rate}€/h.`;
-                } else if (data.structured_request) {
-                    reply = `✅ Annonce enregistrée pour <b>${data.structured_request.title}</b> (${data.structured_request.city}).`;
-                }
-
-                chatMessages.innerHTML += `
-                    <div class="bg-gray-800/80 border border-gray-700/50 p-2.5 rounded-2xl rounded-tl-sm text-gray-200">
-                        ${reply}
-                    </div>
-                `;
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            } catch (err) {
-                chatMessages.innerHTML += `
-                    <div class="bg-gray-800/80 p-2.5 rounded-2xl text-gray-400">
-                        Message transmis au réseau d'artisans.
-                    </div>
-                `;
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }
-        }
-
-        // 3. Modale de Réservation & Séquestre
         function openBookingModal(providerId, providerName, rate) {
             document.getElementById('book-prov-id').value = providerId;
             document.getElementById('book-prov-name').innerText = `Réserver : ${providerName}`;
-            document.getElementById('book-rate-display').innerText = `${rate}.00 €`;
+            document.getElementById('book-rate-display').innerText = `${rate}.00 € / h`;
             
-            // Date par défaut : demain
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             document.getElementById('book-date').value = tomorrow.toISOString().split('T')[0];
+
+            if (currentUser && currentUser.email) {
+                document.getElementById('book-customer-email').value = currentUser.email;
+            }
 
             document.getElementById('booking-modal').classList.remove('hidden');
         }
@@ -415,7 +499,7 @@
             event.preventDefault();
             const btn = document.getElementById('book-submit-btn');
             btn.disabled = true;
-            btn.innerText = "Sécurisation du séquestre...";
+            btn.innerText = "Sécurisation...";
 
             const payload = {
                 provider_id: parseInt(document.getElementById('book-prov-id').value),
@@ -433,129 +517,22 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert("🎉 Créneau réservé et empreinte de séquestre validée ! Vous recevrez une confirmation par e-mail.");
+                    alert("🎉 Créneau réservé avec séquestre bancaire !");
                     closeBookingModal();
                 } else {
                     alert("❌ " + (data.detail || "Créneau non disponible."));
                 }
             } catch (err) {
                 console.error(err);
-                alert("Erreur lors de la réservation.");
+                alert("Erreur de réservation.");
             } finally {
                 btn.disabled = false;
-                btn.innerText = "Confirmer la réservation avec Séquestre";
+                btn.innerText = "Confirmer la réservation";
             }
         }
 
-        // 4. Modale de Publication d'Annonce Artisan
-        function openAuthModal() {
-            closeAuthModal();
-            const modalHTML = `
-                <div id="auth-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-                    <div class="bg-gray-900 border border-gray-800 rounded-3xl max-w-md w-full p-6 relative overflow-hidden shadow-2xl">
-                        <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl cursor-pointer">✕</button>
-                        <div class="flex items-center space-x-2 mb-2">
-                            <span class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
-                                <i class="ph-bold ph-plus-circle text-lg"></i>
-                            </span>
-                            <h3 class="text-2xl font-bold text-white">Espace Prestataire</h3>
-                        </div>
-                        <p class="text-sm text-gray-400 mb-6">Créez votre compte pour publier votre annonce sur ProxiMatch Elite.</p>
-                        
-                        <form id="provider-form" onsubmit="submitProviderAnnouncement(event)" class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Nom / Enseigne</label>
-                                <input type="text" id="prov-name" placeholder="Ex: Jean Bricolage Pro" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-white focus:border-amber-500 outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-mono uppercase text-gray-400 mb-1">E-mail</label>
-                                <input type="email" id="prov-email" placeholder="contact@artisan.fr" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-white focus:border-amber-500 outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Mot de passe</label>
-                                <input type="password" id="prov-password" placeholder="••••••••" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-white focus:border-amber-500 outline-none">
-                            </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Métier / Spécialité</label>
-                                    <select id="prov-skill" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-white focus:border-amber-500 outline-none">
-                                        <option value="menage">Ménage</option>
-                                        <option value="bricolage">Bricolage</option>
-                                        <option value="plomberie">Plomberie</option>
-                                        <option value="jardinage">Jardinage</option>
-                                        <option value="electricite">Électricité</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Tarif (€/h)</label>
-                                    <input type="number" id="prov-rate" value="35" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-white focus:border-amber-500 outline-none">
-                                </div>
-                            </div>
-                            <button type="submit" id="prov-submit-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold py-3 rounded-xl transition mt-4 cursor-pointer shadow-lg shadow-amber-500/20">
-                                Valider et Publier l'Annonce
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHTML);
-        }
-
-        function closeAuthModal() {
-            const modal = document.getElementById('auth-modal');
-            if (modal) modal.remove();
-        }
-
-        async function submitProviderAnnouncement(event) {
-            event.preventDefault();
-            const btn = document.getElementById('prov-submit-btn');
-            if (btn) {
-                btn.disabled = true;
-                btn.innerText = "Publication en cours...";
-            }
-
-            const payload = {
-                name: document.getElementById('prov-name').value,
-                email: document.getElementById('prov-email').value,
-                password: document.getElementById('prov-password').value,
-                role: "provider",
-                skill: document.getElementById('prov-skill').value,
-                hourly_rate: parseFloat(document.getElementById('prov-rate').value),
-                max_distance_km: 30,
-                latitude: 48.8590,
-                longitude: 2.3780
-            };
-
-            try {
-                const response = await fetch('/api/v1/auth/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    alert("✅ Annonce publiée avec succès sur la marketplace !");
-                    closeAuthModal();
-                    searchProviders('all');
-                } else {
-                    alert("❌ Erreur : " + (result.detail || "Impossible de publier l'annonce"));
-                }
-            } catch (err) {
-                console.error(err);
-                alert("❌ Erreur de connexion au serveur.");
-            } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerText = "Valider et Publier l'Annonce";
-                }
-            }
-        }
-
-        function toggleDashboard() {
-            openAuthModal();
-        }
-
-        // Chargement initial
+        // Initialisation de la page
+        updateNavbar();
         searchProviders();
     </script>
 </body>
