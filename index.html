@@ -208,17 +208,18 @@
                 </span>
                 <button onclick="toggleChat()" class="text-gray-400 hover:text-white text-sm cursor-pointer">✕</button>
             </div>
-            <div id="chat-messages" class="flex-grow p-3 overflow-y-auto text-xs space-y-2 text-gray-300 custom-scrollbar">
+            <div id="chat-messages-container" class="flex-grow p-3 overflow-y-auto text-xs space-y-2 text-gray-300 custom-scrollbar">
                 <div class="bg-gray-800/50 p-2 rounded-xl text-gray-200">
                     Bonjour ! Comment puis-je vous aider aujourd'hui ?
                 </div>
             </div>
             <form onsubmit="sendChatMessage(event)" class="p-2 border-t border-gray-800 flex bg-gray-950">
-                <input type="text" id="chat-input" placeholder="Écrivez votre message..." autocomplete="off" class="flex-grow bg-black/40 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none transition">
+                <input type="text" id="chat-input-field" placeholder="Écrivez votre message..." autocomplete="off" class="flex-grow bg-black/40 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none transition">
                 <button type="submit" class="ml-2 bg-amber-500 hover:bg-amber-400 text-black px-3.5 py-2 rounded-xl font-bold text-xs transition cursor-pointer shadow-md shadow-amber-500/20">
                     Envoyer
                 </button>
             </form>
+
         </div>
         <button onclick="toggleChat()" class="bg-amber-500 hover:bg-amber-400 text-black w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl transition transform hover:scale-105 cursor-pointer">
             <i class="ph-bold ph-chat-teardrop-dots"></i>
@@ -328,21 +329,64 @@
             }
         }
 
+        let chatSocket = null;
+
+        function initWebSocketChat() {
+            try {
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+                chatSocket = new WebSocket(wsProtocol + window.location.host + '/ws/chat');
+
+                chatSocket.onmessage = function(event) {
+                    const chatMessages = document.getElementById('chat-messages-container') || document.getElementById('chat-messages');
+                    if (chatMessages) {
+                        const messageElement = document.createElement('div');
+                        messageElement.className = "bg-gray-800/80 p-2.5 rounded-xl text-xs text-gray-200 my-1.5 border border-gray-700/50";
+                        messageElement.textContent = event.data;
+                        chatMessages.appendChild(messageElement);
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+                };
+
+                chatSocket.onclose = function() {
+                    console.warn("Connexion WebSocket fermée. Tentative de reconnexion...");
+                    setTimeout(initWebSocketChat, 3000);
+                };
+            } catch (e) {
+                console.error("Erreur init WebSocket:", e);
+            }
+        }
+
+        function sendWebSocketMessage() {
+            const input = document.getElementById('chat-input-field') || document.getElementById('chat-input');
+            if (input && input.value.trim() !== "" && chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                chatSocket.send(input.value.trim());
+                input.value = '';
+            }
+        }
+
         function toggleChat() {
             const win = document.getElementById('chat-window');
             win.classList.toggle('hidden');
             if (!win.classList.contains('hidden')) {
-                document.getElementById('chat-input').focus();
+                const input = document.getElementById('chat-input-field') || document.getElementById('chat-input');
+                if (input) input.focus();
             }
         }
 
         async function sendChatMessage(event) {
             if (event) event.preventDefault();
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
+            const input = document.getElementById('chat-input-field') || document.getElementById('chat-input');
+            const text = input ? input.value.trim() : '';
             if (!text) return;
 
-            const chatMessages = document.getElementById('chat-messages');
+            // Si WebSocket est ouvert, on diffuse le message en direct
+            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                chatSocket.send(text);
+                input.value = '';
+                return;
+            }
+
+            const chatMessages = document.getElementById('chat-messages-container') || document.getElementById('chat-messages');
             chatMessages.innerHTML += `
                 <div class="flex justify-end">
                     <div class="bg-amber-500 text-black p-2.5 rounded-2xl rounded-tr-sm max-w-[80%] font-medium">
@@ -350,7 +394,7 @@
                     </div>
                 </div>
             `;
-            input.value = '';
+            if (input) input.value = '';
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
             try {
@@ -384,6 +428,7 @@
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }
         }
+
 
         function openAuthModal(initialTab = 'login') {
             closeAuthModal();
@@ -1092,7 +1137,12 @@
 
         updateNavbar();
         searchProviders();
+        initWebSocketChat();
+        window.addEventListener('DOMContentLoaded', () => {
+            initWebSocketChat();
+        });
 
     </script>
+
 </body>
 </html>

@@ -2187,19 +2187,46 @@ class ConnectionManager:
     def __init__(self):
         # Dictionnaire associant un ID de conversation à une liste de WebSockets actifs
         self.active_connections: Dict[int, List[WebSocket]] = {}
+        self.global_connections: List[WebSocket] = []
 
-    async def connect(self, conversation_id: int, websocket: WebSocket):
+    async def connect_global(self, websocket: WebSocket):
         await websocket.accept()
-        if conversation_id not in self.active_connections:
-            self.active_connections[conversation_id] = []
-        self.active_connections[conversation_id].append(websocket)
+        self.global_connections.append(websocket)
 
-    def disconnect(self, conversation_id: int, websocket: WebSocket):
-        if conversation_id in self.active_connections:
-            if websocket in self.active_connections[conversation_id]:
-                self.active_connections[conversation_id].remove(websocket)
-            if not self.active_connections[conversation_id]:
-                del self.active_connections[conversation_id]
+    def disconnect_global(self, websocket: WebSocket):
+        if websocket in self.global_connections:
+            self.global_connections.remove(websocket)
+
+    async def broadcast_global(self, message: str):
+        for connection in list(self.global_connections):
+            try:
+                await connection.send_text(message)
+            except Exception:
+                pass
+
+    async def connect(self, conversation_id_or_ws, websocket: Optional[WebSocket] = None):
+        if websocket is None:
+            await self.connect_global(conversation_id_or_ws)
+        else:
+            conv_id = conversation_id_or_ws
+            await websocket.accept()
+            if conv_id not in self.active_connections:
+                self.active_connections[conv_id] = []
+            self.active_connections[conv_id].append(websocket)
+
+    def disconnect(self, conversation_id_or_ws, websocket: Optional[WebSocket] = None):
+        if websocket is None:
+            self.disconnect_global(conversation_id_or_ws)
+        else:
+            conv_id = conversation_id_or_ws
+            if conv_id in self.active_connections:
+                if websocket in self.active_connections[conv_id]:
+                    self.active_connections[conv_id].remove(websocket)
+                if not self.active_connections[conv_id]:
+                    del self.active_connections[conv_id]
+
+    async def broadcast(self, message: str):
+        await self.broadcast_global(message)
 
     async def broadcast_to_conversation(self, conversation_id: int, message: dict):
         if conversation_id in self.active_connections:
@@ -2210,6 +2237,7 @@ class ConnectionManager:
                     pass
 
 manager = ConnectionManager()
+
 
 
 @app.post(
@@ -2406,9 +2434,25 @@ async def websocket_conversation_endpoint(
         manager.disconnect(conversation_id, websocket)
 
 
+@app.websocket("/ws/chat")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Diffuse le message reçu à tous les clients connectés sur le canal
+            await manager.broadcast(f"Message : {data}")
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        await manager.broadcast("Un utilisateur s'est déconnecté du chat.")
+    except Exception:
+        manager.disconnect(websocket)
+
+
 # ----------------------------------------------------------------------
 # 7. Dashboard & Synthèse Globale
 # ----------------------------------------------------------------------
+
 @app.get(
     "/dashboard/summary",
     response_model=DashboardSummaryResponse,
