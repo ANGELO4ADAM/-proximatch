@@ -975,9 +975,58 @@
             }
         }
 
+        async function initiateEscrowPayment(providerId, amount) {
+
+            try {
+                const clientId = (currentUser && currentUser.id) ? currentUser.id : 1;
+                const response = await fetch('/api/v1/stripe/create-escrow', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider_id: providerId,
+                        client_id: clientId,
+                        amount: amount
+                    })
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    alert(`Paiement sécurisé accepté ! ${result.message}`);
+                    closeBookingModal();
+                } else {
+                    alert(`Erreur : ${result.detail}`);
+                }
+            } catch (err) {
+                console.error("Erreur réseau lors du séquestre Stripe :", err);
+            }
+        }
+
+        async function validateAndReleaseMission(escrowId) {
+            if (!confirm("Confirmez-vous la fin de la mission pour libérer les fonds au prestataire ?")) return;
+
+            try {
+                const response = await fetch('/api/v1/stripe/release-funds', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ escrow_id: escrowId })
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert(`Erreur : ${result.detail}`);
+                }
+            } catch (err) {
+                console.error("Erreur lors de la libération des fonds :", err);
+            }
+        }
+
         // -------------------------------------------------------------
         // GESTION DES MODALES D'INFORMATIONS LÉGALES & SUPPORT
         // -------------------------------------------------------------
+
         function openInfoModal(type) {
             const modal = document.getElementById('info-modal');
             const title = document.getElementById('info-modal-title');

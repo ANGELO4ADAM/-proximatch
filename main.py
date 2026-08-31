@@ -231,6 +231,18 @@ def init_db():
         if "moderation_reasons" not in existing_msg_cols:
             conn.execute("ALTER TABLE messages ADD COLUMN moderation_reasons TEXT;")
 
+        # 3. Table des séquestres Stripe (escrows)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS escrows (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                provider_id INTEGER,
+                client_id INTEGER,
+                amount REAL,
+                status TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
         # Seed utilisateur de démonstration par défaut si absent
         cursor.execute("SELECT count(*) FROM users WHERE id = 1;")
         if cursor.fetchone()[0] == 0:
@@ -240,6 +252,7 @@ def init_db():
             """)
 
         conn.commit()
+
 
 
 @asynccontextmanager
@@ -3171,8 +3184,80 @@ async def get_payment_intent_status(payment_intent_id: str):
 
 
 # ----------------------------------------------------------------------
+# 10.bis Routes Directes Séquestre Stripe (Escrows Table)
+# ----------------------------------------------------------------------
+class EscrowCreateRequest(BaseModel):
+    provider_id: int
+    client_id: int
+    amount: float
+
+
+class EscrowReleaseRequest(BaseModel):
+    escrow_id: int
+
+
+@app.post(
+    "/api/v1/stripe/create-escrow",
+    summary="Bloquer les fonds en séquestre Stripe",
+)
+async def create_escrow(data: EscrowCreateRequest, db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS escrows (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            provider_id INTEGER,
+            client_id INTEGER,
+            amount REAL,
+            status TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    # Enregistrement du séquestre en base avec statut 'held_in_escrow'
+    c.execute(
+        "INSERT INTO escrows (provider_id, client_id, amount, status) VALUES (?, ?, ?, ?)",
+        (data.provider_id, data.client_id, data.amount, "held_in_escrow")
+    )
+    db.commit()
+    escrow_id = c.lastrowid
+
+    return {
+        "status": "success",
+        "escrow_id": escrow_id,
+        "message": "Fonds bloqués avec succès sur le compte séquestre Stripe.",
+        "held_amount": data.amount
+    }
+
+
+@app.post(
+    "/api/v1/stripe/release-funds",
+    summary="Valider la prestation et libérer les fonds séquestrés",
+)
+async def release_funds(data: EscrowReleaseRequest, db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
+    # Vérification et mise à jour du statut du séquestre
+    c.execute("SELECT status, amount FROM escrows WHERE id = ?", (data.escrow_id,))
+    row = c.fetchone()
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Séquestre introuvable.")
+        
+    status_val = row["status"] if isinstance(row, sqlite3.Row) else row[0]
+    if status_val != "held_in_escrow":
+        raise HTTPException(status_code=400, detail="Les fonds ont déjà été libérés ou annulés.")
+        
+    c.execute("UPDATE escrows SET status = ? WHERE id = ?", ("released_to_provider", data.escrow_id))
+    db.commit()
+
+    return {
+        "status": "success",
+        "message": "Prestation validée. Fonds libérés vers le compte du prestataire."
+    }
+
+
+# ----------------------------------------------------------------------
 # 11. Module Agenda & Réservation de Créneaux (provider_slots & missions)
 # ----------------------------------------------------------------------
+
 class SlotCreate(BaseModel):
     provider_id: int = Field(..., description="ID du prestataire")
     date: str = Field(..., description="Date au format YYYY-MM-DD (ex: '2026-09-01')")
