@@ -252,6 +252,17 @@ def init_db():
             );
         """)
 
+        # 4. Table des quotas freemium et abonnements prestataires
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS provider_quotas (
+                provider_id INTEGER PRIMARY KEY,
+                credits_remaining INTEGER DEFAULT 3,
+                is_premium INTEGER DEFAULT 0,
+                subscription_end_date TEXT
+            );
+        """)
+
+
         # Seed utilisateur de démonstration par défaut si absent
         cursor.execute("SELECT count(*) FROM users WHERE id = 1;")
         if cursor.fetchone()[0] == 0:
@@ -3779,9 +3790,58 @@ async def check_inactive_accounts(db: sqlite3.Connection = Depends(get_db)):
     }
 
 
+@app.get(
+    "/api/v1/provider/check-access/{provider_id}",
+    summary="Vérifier l'accès freemium/premium d'un prestataire",
+)
+@app.get(
+    "/provider/check-access/{provider_id}",
+    summary="Vérifier l'accès freemium/premium d'un prestataire",
+)
+async def check_provider_access(provider_id: int, db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
+    
+    c.execute(
+        "SELECT credits_remaining, is_premium, subscription_end_date FROM provider_quotas WHERE provider_id = ?",
+        (provider_id,)
+    )
+    result = c.fetchone()
+    
+    if not result:
+        # Initialisation automatique d'un nouveau prestataire avec 3 crédits de test offerts
+        c.execute(
+            "INSERT INTO provider_quotas (provider_id, credits_remaining, is_premium) VALUES (?, 3, 0)",
+            (provider_id,)
+        )
+        db.commit()
+        credits, is_premium = 3, 0
+    else:
+        credits = result["credits_remaining"] if isinstance(result, sqlite3.Row) else result[0]
+        is_premium = result["is_premium"] if isinstance(result, sqlite3.Row) else result[1]
+        sub_date = result["subscription_end_date"] if isinstance(result, sqlite3.Row) else result[2]
+        
+        # Vérification si l'abonnement premium est toujours valide par rapport à la date du jour
+        if is_premium == 1 and sub_date:
+            try:
+                sub_dt = datetime.strptime(sub_date[:10], '%Y-%m-%d')
+                if sub_dt < datetime.now():
+                    c.execute("UPDATE provider_quotas SET is_premium = 0 WHERE provider_id = ?", (provider_id,))
+                    db.commit()
+                    is_premium = 0
+            except Exception:
+                pass
 
+    if is_premium == 1:
+        return {"access": "granted", "mode": "premium_unlimited", "message": "Accès illimité actif."}
+    elif credits > 0:
+        return {"access": "granted", "mode": "free_trial", "credits_left": credits, "message": f"Il vous reste {credits} consultations gratuites."}
+    else:
+        return {
+            "access": "blocked",
+            "mode": "paywall",
+            "message": "Vous avez épuisé vos essais gratuits. Passez à l'abonnement illimité pour continuer à développer votre activité !"
+        }
 
-if __name__ == "__main__":
     import uvicorn
 
     port = int(os.getenv("PORT", 8001))
