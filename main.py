@@ -175,6 +175,9 @@ def init_db():
             conn.execute("ALTER TABLE provider_profiles ADD COLUMN service_radius_km REAL DEFAULT 15.0;")
         if "rating_avg" not in existing_cols:
             conn.execute("ALTER TABLE provider_profiles ADD COLUMN rating_avg REAL DEFAULT 4.8;")
+        if "avatar_url" not in existing_cols:
+            conn.execute("ALTER TABLE provider_profiles ADD COLUMN avatar_url TEXT DEFAULT 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3';")
+
 
         # 2. Tables pour la messagerie anonymisée & Modération
         conn.execute("""
@@ -728,6 +731,80 @@ def list_providers(db: sqlite3.Connection = Depends(get_db)):
     cursor.execute("SELECT id, name, skills, postal_codes, hourly_rate, is_active FROM provider_profiles ORDER BY id ASC")
     rows = cursor.fetchall()
     return [dict(row) for row in rows]
+
+
+class ProviderProfileCreate(BaseModel):
+    name: str = Field(..., description="Nom complet ou raison sociale de l'artisan")
+    skill: str = Field(..., description="Compétences ou métier (ex: plomberie, électricité, ménage)")
+    hourly_rate: float = Field(..., gt=0, description="Tarif horaire en euros")
+    max_distance_km: float = Field(15.0, gt=0, description="Rayon d'intervention maximal en km")
+    latitude: float = Field(..., description="Latitude GPS")
+    longitude: float = Field(..., description="Longitude GPS")
+    avatar_url: str = Field("https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3", description="URL de photo de profil")
+
+
+@app.post(
+    "/api/v1/providers/profile",
+    summary="Publier ou modifier son annonce et sa position géographique sur la marketplace",
+)
+def create_or_update_provider_profile(
+    profile: ProviderProfileCreate,
+    db: sqlite3.Connection = Depends(get_db),
+):
+    """
+    Permet à un prestataire de publier ou modifier son annonce
+    et sa position géographique sur ProxiMatch Elite.
+    """
+    cursor = db.cursor()
+    cursor.execute("SELECT id FROM provider_profiles WHERE name = ?", (profile.name.strip(),))
+    existing = cursor.fetchone()
+
+    if existing:
+        provider_id = existing[0]
+        cursor.execute(
+            """
+            UPDATE provider_profiles
+            SET skills = ?, hourly_rate = ?, service_radius_km = ?, latitude = ?, longitude = ?, avatar_url = ?, is_active = 1
+            WHERE id = ?
+            """,
+            (
+                profile.skill.strip(),
+                profile.hourly_rate,
+                profile.max_distance_km,
+                profile.latitude,
+                profile.longitude,
+                profile.avatar_url,
+                provider_id,
+            ),
+        )
+    else:
+        cursor.execute(
+            """
+            INSERT INTO provider_profiles (name, skills, postal_codes, hourly_rate, service_radius_km, latitude, longitude, avatar_url, is_active, rating_avg)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 4.9)
+            """,
+            (
+                profile.name.strip(),
+                profile.skill.strip(),
+                "75001, 75002, 75011, 75012, Paris",
+                profile.hourly_rate,
+                profile.max_distance_km,
+                profile.latitude,
+                profile.longitude,
+                profile.avatar_url,
+            ),
+        )
+        provider_id = cursor.lastrowid
+
+    db.commit()
+
+    return {
+        "status": "success",
+        "message": "Annonce et profil publiés avec succès sur la marketplace !",
+        "provider_id": provider_id,
+        "data": profile.model_dump(),
+    }
+
 
 
 @app.post(
