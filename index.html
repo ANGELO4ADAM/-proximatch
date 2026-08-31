@@ -1110,21 +1110,27 @@
         }
 
         async function upgradeToPremium(providerId) {
+            if (!confirm("Voulez-vous activer l'abonnement illimité (9,99€/mois) pour débloquer toutes les mises en relation ?")) return;
+
             try {
-                const res = await fetch(`/api/v1/provider/upgrade-premium/${providerId}`, {
-                    method: 'POST'
+                const res = await fetch('/api/v1/provider/upgrade-premium', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider_id: providerId })
                 });
-                const data = await res.json();
+                const result = await res.json();
                 if (res.ok) {
-                    alert("🎉 " + data.message);
-                    loadProviderQuotaStatus(providerId);
+                    alert(result.message);
+                    loadProviderQuotaStatus(providerId); // Rafraîchit les badges du Dashboard
                 } else {
-                    alert("Erreur lors de l'activation de l'abonnement : " + (data.detail || "Erreur inconnue"));
+                    alert("Erreur lors de la mise à niveau : " + (result.detail || "Erreur"));
                 }
             } catch (err) {
-                alert("Redirection vers le portail de paiement sécurisé Stripe pour l'abonnement illimité...");
+                console.error("Erreur réseau :", err);
+                alert("Erreur de connexion au serveur.");
             }
         }
+
 
 
         async function searchProviders(category = null) {
