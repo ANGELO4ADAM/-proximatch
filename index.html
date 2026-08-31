@@ -518,212 +518,84 @@
         // -------------------------------------------------------------
         // GESTION DU TABLEAU DE BORD (CLIENT & PRESTATAIRE)
         // -------------------------------------------------------------
-        async function openDashboard() {
-            if (!currentUser) {
-                openAuthModal('login');
-                return;
-            }
-
+        function openDashboard() {
+            if (!currentUser) return alert("Veuillez vous connecter.");
+            
             const modal = document.getElementById('dashboard-modal');
             const title = document.getElementById('dash-title');
             const subtitle = document.getElementById('dash-subtitle');
-            const content = document.getElementById('dash-content');
-
-            const isProvider = currentUser.role === 'provider';
-            title.innerText = isProvider ? `Espace Prestataire : ${currentUser.name || currentUser.email}` : `Espace Client : ${currentUser.name || currentUser.email}`;
-            subtitle.innerText = isProvider ? "Suivi de vos missions, créneaux d'intervention et gains garantis." : "Suivi de vos réservations, paiements sécurisés et séquestres.";
-
-            content.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500 text-xs"><i class="ph-bold ph-spinner animate-spin text-lg mr-2"></i>Chargement du tableau de bord...</div>';
+            const container = document.getElementById('dash-content');
+            
             modal.classList.remove('hidden');
 
-            try {
-                // Récupération des stats administratives et missions
-                const statsRes = await fetch('/api/v1/admin/dashboard-stats');
-                const stats = statsRes.ok ? await statsRes.json() : {};
-
-                if (isProvider) {
-                    content.innerHTML = `
-                        <!-- Colonne 1 & 2 : Missions et Statistiques Prestataire -->
-                        <div class="lg:col-span-2 space-y-6">
-                            <!-- Cartes Statistiques -->
-                            <div class="grid grid-cols-3 gap-3">
-                                <div class="bg-gray-800/60 border border-gray-800 p-4 rounded-2xl">
-                                    <span class="text-[10px] text-gray-400 uppercase font-mono block">Missions Réalisées</span>
-                                    <span class="text-xl font-black text-amber-400 mt-1 block">12</span>
-                                    <span class="text-[10px] text-emerald-400">100% complétées</span>
-                                </div>
-                                <div class="bg-gray-800/60 border border-gray-800 p-4 rounded-2xl">
-                                    <span class="text-[10px] text-gray-400 uppercase font-mono block">Gains Sécurisés</span>
-                                    <span class="text-xl font-black text-white mt-1 block">420.00 €</span>
-                                    <span class="text-[10px] text-gray-400">Séquestre Stripe</span>
-                                </div>
-                                <div class="bg-gray-800/60 border border-gray-800 p-4 rounded-2xl">
-                                    <span class="text-[10px] text-gray-400 uppercase font-mono block">Note Moyenne</span>
-                                    <span class="text-xl font-black text-amber-400 mt-1 block flex items-center">
-                                        <i class="ph-fill ph-star text-sm mr-1"></i> 4.9
-                                    </span>
-                                    <span class="text-[10px] text-gray-400">28 avis vérifiés</span>
-                                </div>
-                            </div>
-
-                            <!-- Liste des Demandes & Rendez-vous -->
-                            <div class="bg-gray-800/40 border border-gray-800 p-5 rounded-2xl space-y-3">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h3 class="text-sm font-bold text-white">Dernières Demandes & Interventions</h3>
-                                    <span class="text-[10px] bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded-full">Actives</span>
-                                </div>
-
-                                <div class="space-y-2">
-                                    <div class="bg-gray-900/60 border border-gray-800 p-3 rounded-xl flex items-center justify-between">
-                                        <div>
-                                            <span class="text-xs font-bold text-white block">Intervention Dépannage Plomberie</span>
-                                            <span class="text-[10px] text-gray-400">Client : sophie.dupont@email.com • Paris 11ème (~3.2 km)</span>
-                                        </div>
-                                        <div class="flex items-center space-x-2">
-                                            <span class="text-xs font-bold text-amber-400">70.00 €</span>
-                                            <button onclick="alert('Mission acceptée ! Le client a été notifié.')" class="bg-amber-500 hover:bg-amber-400 text-black font-bold text-[10px] px-2.5 py-1 rounded-lg transition">Accepter</button>
-                                        </div>
-                                    </div>
-                                    <div class="bg-gray-900/60 border border-gray-800 p-3 rounded-xl flex items-center justify-between">
-                                        <div>
-                                            <span class="text-xs font-bold text-white block">Installation Tableau Électrique</span>
-                                            <span class="text-[10px] text-gray-400">Client : marc.leroy@email.com • Paris 10ème (~1.8 km)</span>
-                                        </div>
-                                        <div class="flex items-center space-x-2">
-                                            <span class="text-xs font-bold text-amber-400">140.00 €</span>
-                                            <button onclick="alert('Mission acceptée ! Le client a été notifié.')" class="bg-amber-500 hover:bg-amber-400 text-black font-bold text-[10px] px-2.5 py-1 rounded-lg transition">Accepter</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Colonne 3 : Mon Profil Public & Annonce -->
-                        <div class="space-y-4">
-                            <div class="bg-gray-800/40 border border-gray-800 p-5 rounded-2xl space-y-4">
-                                <h3 class="text-sm font-bold text-white flex items-center justify-between">
-                                    <span>Mon Annonce Active</span>
-                                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                                </h3>
-                                <div class="space-y-2 text-xs text-gray-300">
-                                    <div class="flex justify-between py-1 border-b border-gray-800">
-                                        <span class="text-gray-500">Nom / Enseigne :</span>
-                                        <span class="font-bold text-white">${escapeHtml(currentUser.name || 'Artisan Pro')}</span>
-                                    </div>
-                                    <div class="flex justify-between py-1 border-b border-gray-800">
-                                        <span class="text-gray-500">Spécialité :</span>
-                                        <span class="text-amber-400 font-bold">Services & Bricolage</span>
-                                    </div>
-                                    <div class="flex justify-between py-1 border-b border-gray-800">
-                                        <span class="text-gray-500">Tarif horaire :</span>
-                                        <span class="font-bold text-white">35.00 € / h</span>
-                                    </div>
-                                    <div class="flex justify-between py-1 border-b border-gray-800">
-                                        <span class="text-gray-500">Rayon d'action :</span>
-                                        <span class="text-white font-medium">30 km (Paris & banlieue)</span>
-                                    </div>
-                                </div>
-
-                                <button onclick="alert('Modification d\\'annonce enregistrée avec succès.')" class="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold text-xs py-2.5 rounded-xl border border-gray-700 transition">
-                                    Modifier mes Tarifs & Rayon
+            if (currentUser.role === 'provider') {
+                title.textContent = "Espace Prestataire (Pro)";
+                subtitle.textContent = "Gérez vos annonces, votre profil et vos missions reçues.";
+                
+                container.innerHTML = `
+                    <!-- Colonne Gauche / Principale : Annonces et Missions -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="bg-gray-950/50 border border-gray-800 p-5 rounded-2xl">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-sm font-bold text-white">Vos Annonces Actives</h3>
+                                <button onclick="closeDashboard(); openAuthModal('provider');" class="bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold px-3 py-1.5 rounded-xl transition cursor-pointer">
+                                    + Créer une annonce
                                 </button>
                             </div>
-
-                            <div class="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl text-xs space-y-1">
-                                <span class="font-bold text-emerald-400 block flex items-center">
-                                    <i class="ph-bold ph-shield-check mr-1.5 text-sm"></i> Séquestre Stripe Connect
-                                </span>
-                                <p class="text-[11px] text-gray-400">Vos fonds sont garantis dès la réservation et versés directement sur votre compte bancaire.</p>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    content.innerHTML = `
-                        <!-- Colonne 1 & 2 : Réservations et Séquestres Client -->
-                        <div class="lg:col-span-2 space-y-6">
-                            <!-- Cartes Statistiques Client -->
-                            <div class="grid grid-cols-3 gap-3">
-                                <div class="bg-gray-800/60 border border-gray-800 p-4 rounded-2xl">
-                                    <span class="text-[10px] text-gray-400 uppercase font-mono block">Réservations</span>
-                                    <span class="text-xl font-black text-amber-400 mt-1 block">3</span>
-                                    <span class="text-[10px] text-emerald-400">En cours</span>
-                                </div>
-                                <div class="bg-gray-800/60 border border-gray-800 p-4 rounded-2xl">
-                                    <span class="text-[10px] text-gray-400 uppercase font-mono block">Séquestre Protégé</span>
-                                    <span class="text-xl font-black text-white mt-1 block">105.00 €</span>
-                                    <span class="text-[10px] text-emerald-400">Fonds bloqués</span>
-                                </div>
-                                <div class="bg-gray-800/60 border border-gray-800 p-4 rounded-2xl">
-                                    <span class="text-[10px] text-gray-400 uppercase font-mono block">Protection</span>
-                                    <span class="text-xl font-black text-emerald-400 mt-1 block">100%</span>
-                                    <span class="text-[10px] text-gray-400">Garantie satisfaction</span>
-                                </div>
-                            </div>
-
-                            <!-- Liste des Réservations -->
-                            <div class="bg-gray-800/40 border border-gray-800 p-5 rounded-2xl space-y-3">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h3 class="text-sm font-bold text-white">Mes Réservations & Artisans Réservés</h3>
-                                    <span class="text-[10px] bg-amber-500/10 text-amber-400 font-bold px-2 py-0.5 rounded-full">3 en attente de travaux</span>
-                                </div>
-
-                                <div class="space-y-2">
-                                    <div class="bg-gray-900/60 border border-gray-800 p-3 rounded-xl flex items-center justify-between">
-                                        <div>
-                                            <span class="text-xs font-bold text-white block">Thomas R. • Plomberie</span>
-                                            <span class="text-[10px] text-gray-400">Créneau : Demain à 10:00 • Séquestre : 35.00 €</span>
-                                        </div>
-                                        <div class="flex items-center space-x-2">
-                                            <button onclick="alert('✅ Fonds débloqués et versés à l\\'artisan après validation des travaux !')" class="bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-[10px] px-3 py-1.5 rounded-lg transition">
-                                                Valider & Libérer les fonds
-                                            </button>
-                                        </div>
+                            <div class="space-y-3">
+                                <div class="bg-gray-900 border border-gray-800 p-3 rounded-xl flex justify-between items-center">
+                                    <div>
+                                        <h4 class="text-xs font-bold text-white">Service de Plomberie Générale</h4>
+                                        <p class="text-[11px] text-gray-400">Tarif : 35 €/h • Rayon : 15 km</p>
                                     </div>
-                                    <div class="bg-gray-900/60 border border-gray-800 p-3 rounded-xl flex items-center justify-between">
-                                        <div>
-                                            <span class="text-xs font-bold text-white block">Sarah M. • Ménage & Repassage</span>
-                                            <span class="text-[10px] text-gray-400">Créneau : Samedi à 14:00 • Séquestre : 70.00 €</span>
-                                        </div>
-                                        <div class="flex items-center space-x-2">
-                                            <button onclick="alert('✅ Fonds débloqués et versés à l\\'artisan après validation des travaux !')" class="bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-[10px] px-3 py-1.5 rounded-lg transition">
-                                                Valider & Libérer les fonds
-                                            </button>
-                                        </div>
-                                    </div>
+                                    <span class="bg-emerald-500/10 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full font-mono">Actif</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Colonne 3 : Support & Sécurité Anti-Fraude -->
-                        <div class="space-y-4">
-                            <div class="bg-gray-800/40 border border-gray-800 p-5 rounded-2xl space-y-3">
-                                <h3 class="text-sm font-bold text-white flex items-center">
-                                    <i class="ph-bold ph-shield-check text-amber-500 mr-2 text-base"></i> Sécurité Anti-Désintermédiation
-                                </h3>
-                                <p class="text-xs text-gray-400">Vos échanges et coordonnées sont protégés par modération NLP en temps réel.</p>
-                                <ul class="text-[11px] text-gray-300 space-y-1 list-disc list-inside">
-                                    <li>Paiements 100% sécurisés via Stripe</li>
-                                    <li>Déblocage des fonds sur votre accord</li>
-                                    <li>Assurance dommages incluse</li>
-                                </ul>
-                            </div>
-
-                            <button onclick="toggleChat(); closeDashboard();" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs py-3 rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center justify-center space-x-1.5 cursor-pointer">
-                                <i class="ph-bold ph-chat-teardrop-dots text-sm"></i>
-                                <span>Contacter l'Assistance IA</span>
-                            </button>
+                        <div class="bg-gray-950/50 border border-gray-800 p-5 rounded-2xl">
+                            <h3 class="text-sm font-bold text-white mb-3">Demandes de Missions (WhatsApp)</h3>
+                            <p class="text-xs text-gray-400">Aucune nouvelle mission en attente pour le moment. Les alertes automatiques sont actives.</p>
                         </div>
-                    `;
-                }
-            } catch (err) {
-                console.error(err);
-                content.innerHTML = '<div class="col-span-full text-center py-8 text-rose-400 text-xs">Erreur lors du chargement des données.</div>';
+                    </div>
+
+                    <!-- Colonne Droite : Profil Pro & Revenus -->
+                    <div class="space-y-6">
+                        <div class="bg-gray-950/50 border border-gray-800 p-5 rounded-2xl text-center">
+                            <div class="w-16 h-16 rounded-full bg-gray-800 mx-auto mb-3 flex items-center justify-center text-xl font-bold text-amber-400">
+                                ${(currentUser.email || 'P').charAt(0).toUpperCase()}
+                            </div>
+                            <h3 class="text-sm font-bold text-white">${escapeHtml(currentUser.email)}</h3>
+                            <p class="text-xs text-amber-400 font-mono mt-1">Prestataire Vérifié</p>
+                            <div class="mt-4 pt-4 border-t border-gray-800 text-left space-y-2 text-xs text-gray-300">
+                                <div class="flex justify-between"><span>Gains sécurisés :</span> <strong class="text-white">0,00 €</strong></div>
+                                <div class="flex justify-between"><span>Statut Séquestre :</span> <span class="text-emerald-400">Stripe Connect OK</span></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                title.textContent = "Espace Client";
+                subtitle.textContent = "Suivi de vos réservations et de vos séquestres bancaires.";
+                
+                container.innerHTML = `
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="bg-gray-950/50 border border-gray-800 p-5 rounded-2xl">
+                            <h3 class="text-sm font-bold text-white mb-4">Mes Réservations en Cours</h3>
+                            <p class="text-xs text-gray-400">Vous n'avez aucune réservation active. Recherchez un prestataire sur la page d'accueil pour commencer.</p>
+                        </div>
+                    </div>
+                    <div class="bg-gray-950/50 border border-gray-800 p-5 rounded-2xl space-y-3">
+                        <h3 class="text-sm font-bold text-white">Mon Compte</h3>
+                        <p class="text-xs text-gray-300">E-mail : <strong>${escapeHtml(currentUser.email)}</strong></p>
+                        <p class="text-xs text-emerald-400">Paiements sécurisés par Stripe Séquestre.</p>
+                    </div>
+                `;
             }
         }
 
         function closeDashboard() {
-            const modal = document.getElementById('dashboard-modal');
-            if (modal) modal.classList.add('hidden');
+            document.getElementById('dashboard-modal').classList.add('hidden');
         }
 
         async function searchProviders(category = null) {
