@@ -463,26 +463,25 @@
             const btn = document.getElementById('reg-submit-btn');
             if (btn) { btn.disabled = true; btn.innerText = "Création du compte..."; }
 
-            const email = document.getElementById('reg-email').value.trim();
-            const password = document.getElementById('reg-password').value.trim();
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
             const role = document.getElementById('reg-role').value;
-            const isProvider = role === 'provider';
-            const name = document.getElementById('reg-name').value.trim();
-            const skill = isProvider ? document.getElementById('reg-skill').value : 'Client';
-            const rate = isProvider ? parseFloat(document.getElementById('reg-rate').value) : 35.0;
-            const avatarUrl = isProvider && document.getElementById('reg-avatar') ? document.getElementById('reg-avatar').value.trim() : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb';
+            const name = document.getElementById('reg-name').value;
+            const skill = role === 'provider' ? document.getElementById('reg-skill').value : 'Client';
+            const hourly_rate = role === 'provider' ? parseFloat(document.getElementById('reg-rate').value) : 0;
+            const avatar_url = role === 'provider' && document.getElementById('reg-avatar') ? document.getElementById('reg-avatar').value : '';
 
             const payload = {
                 email,
                 password,
-                role: isProvider ? 'provider' : 'customer',
+                role,
                 name,
                 skill,
-                hourly_rate: rate,
-                max_distance_km: 30,
-                latitude: defaultLat,
-                longitude: defaultLon,
-                avatar_url: avatarUrl
+                hourly_rate,
+                max_distance_km: 15,
+                latitude: 48.8590,
+                longitude: 2.3780,
+                avatar_url
             };
 
             try {
@@ -491,29 +490,29 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
+                
                 if (res.ok || res.status === 400) {
-                    currentUser = { email, role: payload.role, name: payload.name };
+                    currentUser = { email, role, name };
                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
                     closeAuthModal();
                     updateNavbar();
-                    alert(isProvider ? "✅ Compte créé et annonce publiée avec succès sur la marketplace !" : "✅ Compte client créé avec succès !");
-                    searchProviders('all');
+                    alert("Compte créé avec succès !");
+                    searchProviders();
                 } else {
-                    const err = await res.json();
-                    alert("❌ Erreur : " + (err.detail || "Impossible de créer le compte."));
+                    alert("Erreur lors de l'inscription.");
                 }
             } catch (err) {
-                currentUser = { email, role: payload.role, name: payload.name };
+                currentUser = { email, role, name };
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 closeAuthModal();
                 updateNavbar();
-                alert("✅ Compte créé avec succès !");
+                alert("Mode local : Compte créé avec succès !");
                 searchProviders();
             } finally {
                 if (btn) { btn.disabled = false; btn.innerText = "Créer mon Compte"; }
             }
         }
+
 
         function logout() {
             currentUser = null;
