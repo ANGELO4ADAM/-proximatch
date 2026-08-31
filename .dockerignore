@@ -1,0 +1,25 @@
+# Environnements virtuels
+venv/
+env/
+.env
+.env.*
+
+# Caches Python & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Git & IDEs
+.git/
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Fichiers sensibles & scripts
+push_to_github.sh
+*.token
+*.log
+database.db

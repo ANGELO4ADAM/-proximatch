@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProxiMatch Elite | Le Réseau des Prestataires d'Excellence</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0a0b0e',
+                        cardbg: '#12141c',
+                        cardborder: '#2a2e3d',
+                        goldaccent: '#f59e0b',
+                        goldborder: '#fbbf24'
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Phosphor Icons & Google Fonts -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+        
+        .collector-card {
+            background: linear-gradient(135deg, #161923 0%, #0d0f15 100%);
+            border: 2px solid rgba(245, 158, 11, 0.3);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .collector-card:hover {
+            transform: translateY(-6px) scale(1.02);
+            border-color: rgba(245, 158, 11, 0.8);
+            box-shadow: 0 20px 40px -15px rgba(245, 158, 11, 0.25);
+        }
+
+        .glass-panel {
+            background: rgba(18, 20, 28, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Scrollbars fines */
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.25); border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.6); }
+    </style>
+</head>
+<body class="bg-darkbg text-gray-100 min-h-screen flex flex-col selection:bg-goldaccent selection:text-black relative overflow-x-hidden">
+
+    <!-- HEADER / NAVIGATION -->
+    <header class="border-b border-gray-800 bg-darkbg/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
+                    <i class="ph-bold ph-lightning text-black text-xl"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-gray-200 to-amber-400 bg-clip-text text-transparent">ProxiMatch</span>
+                    <span class="text-xs uppercase tracking-widest block text-amber-500 font-bold">Elite Series</span>
+                </div>
+            </div>
+
+            <!-- Liens et Status -->
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <span class="hidden md:inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-2"></span> Moteur GPS Haversine & JWT Actifs
+                </span>
+
+                <!-- Bouton Auth JWT -->
+                <button id="authNavBtn" onclick="openAuthModal()" class="px-3.5 py-2 rounded-xl bg-cardbg hover:bg-gray-800 text-gray-200 border border-gray-700 font-semibold text-xs transition flex items-center space-x-1.5 cursor-pointer">
+                    <i class="ph-bold ph-user-circle text-base text-amber-400"></i>
+                    <span id="authNavText">Connexion</span>
+                </button>
+
+                <!-- Bouton WhatsApp Simulator -->
+                <button onclick="scrollToSimulator()" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs sm:text-sm transition shadow-lg shadow-amber-500/20 flex items-center space-x-2 cursor-pointer">
+                    <i class="ph-bold ph-chats-circle text-base"></i>
+                    <span class="hidden sm:inline">Tester via WhatsApp</span>
+                    <span class="sm:hidden">WhatsApp</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section class="relative py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
+        <div class="absolute inset-0 -z-10 flex items-center justify-center opacity-20 blur-3xl pointer-events-none">
+            <div class="w-96 h-96 bg-amber-500 rounded-full"></div>
+            <div class="w-96 h-96 bg-indigo-600 rounded-full"></div>
+        </div>
+        <span class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold tracking-wide uppercase mb-4">
+            <i class="ph-fill ph-shield-check text-emerald-400"></i> Matching Orthodromique & Protection Anti-Désintermédiation
+        </span>
+        <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white mb-4">
+            Trouvez l'expert idéal <br>
+            <span class="bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500 bg-clip-text text-transparent">en un clin d'œil</span>
+        </h1>
+        <p class="max-w-2xl mx-auto text-sm sm:text-base text-gray-400 mb-8 leading-relaxed">
+            Une mise en relation géolocalisée instantanée avec les meilleurs artisans et prestataires qualifiés autour de chez vous, alimentée par la formule de Haversine et l'IA Gemini.
+        </p>
+
+        <!-- FILTRES INTERACTIFS PAR MÉTIER -->
+        <div id="filter-container" class="flex flex-wrap justify-center gap-2 sm:gap-3">
+            <button onclick="filterCategory('all')" data-category="all" class="filter-btn px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition bg-amber-500 text-black shadow-md cursor-pointer">Tous les Profils</button>
+            <button onclick="filterCategory('menage')" data-category="menage" class="filter-btn px-5 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition bg-cardbg hover:bg-gray-800 text-gray-300 border border-gray-800 cursor-pointer">🧹 Ménage & Entretien</button>
+            <button onclick="filterCategory('bricolage')" data-category="bricolage" class="filter-btn px-5 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition bg-cardbg hover:bg-gray-800 text-gray-300 border border-gray-800 cursor-pointer">🛠️ Bricolage & Pose</button>
+            <button onclick="filterCategory('plomberie')" data-category="plomberie" class="filter-btn px-5 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition bg-cardbg hover:bg-gray-800 text-gray-300 border border-gray-800 cursor-pointer">🔧 Plomberie & Sanitaire</button>
+            <button onclick="filterCategory('jardinage')" data-category="jardinage" class="filter-btn px-5 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition bg-cardbg hover:bg-gray-800 text-gray-300 border border-gray-800 cursor-pointer">🌿 Jardinage & Espaces</button>
+            <button onclick="filterCategory('electricite')" data-category="electricite" class="filter-btn px-5 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition bg-cardbg hover:bg-gray-800 text-gray-300 border border-gray-800 cursor-pointer">⚡ Électricité</button>
+        </div>
+    </section>
+
+    <!-- SECTION SAISIE NLP IA -->
+    <section class="max-w-4xl mx-auto px-4 sm:px-6 mb-12">
+        <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-4 relative overflow-hidden border border-amber-500/20 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider">
+                    <i class="ph-fill ph-sparkle text-sm"></i>
+                    <span>Simulateur de Requête IA (Gemini 2.5 Flash + Haversine)</span>
+                </div>
+                <span class="text-xs text-gray-400">Analyse en direct</span>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-bold text-white">Exprimez votre besoin librement en langage naturel</label>
+                <textarea id="userInput" rows="2" class="w-full bg-darkbg border border-gray-800 rounded-2xl p-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 transition-all resize-none shadow-inner" placeholder="Ex: Bonjour, je cherche un plombier d'urgence à Bondy, budget max 150€."></textarea>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                <span class="font-semibold text-gray-300">Exemples rapides :</span>
+                <button type="button" onclick="fillExample('Salut, je cherche quelqu\'un pour refaire la plomberie de ma salle de bain à Bondy, mon budget est de 150 max.')" class="px-3 py-1.5 bg-cardbg hover:bg-gray-800 border border-gray-800 rounded-xl text-gray-300 transition-all cursor-pointer">🛠️ Plomberie à Bondy</button>
+                <button type="button" onclick="fillExample('Je cherche une personne pour 3h de ménage et repassage à Paris 11ème pour 25€/h')" class="px-3 py-1.5 bg-cardbg hover:bg-gray-800 border border-gray-800 rounded-xl text-gray-300 transition-all cursor-pointer">🧹 Ménage Paris 11e</button>
+                <button type="button" onclick="fillExample('Besoin d\'un jardinier à Montreuil pour tailler une haie budget 80€')" class="px-3 py-1.5 bg-cardbg hover:bg-gray-800 border border-gray-800 rounded-xl text-gray-300 transition-all cursor-pointer">🌿 Jardinier Montreuil</button>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                <div class="flex-1">
+                    <input id="userPhone" type="text" value="0699112233" class="w-full bg-darkbg border border-gray-800 rounded-xl px-4 py-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500" placeholder="Téléphone / WhatsApp (ex: 0699112233)">
+                </div>
+                <button id="submitBtn" onclick="submitAiRequest()" class="px-6 py-3 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 hover:opacity-95 text-black font-extrabold rounded-xl text-xs sm:text-sm shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0">
+                    <i class="ph-bold ph-lightning text-base"></i>
+                    <span>Lancer le Matching IA & Haversine</span>
+                </button>
+            </div>
+
+            <div id="aiAlert" class="hidden p-4 rounded-2xl text-xs border"></div>
+        </div>
+    </section>
+
+    <!-- MAIN CONTENT: GRILLE DE CARTES COLLECTOR PROXIMATCH ELITE -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 w-full space-y-12">
+        
+        <div>
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                        Cartes Prestataires Elite Series
+                    </h2>
+                    <p class="text-xs text-gray-400">Profils vérifiés avec calcul de distance GPS en direct.</p>
+                </div>
+                <span id="providerCountBadge" class="px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold rounded-xl">
+                    Chargement...
+                </span>
+            </div>
+
+            <div id="providers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Les cartes collector sont injectées dynamiquement ici par JS -->
+                <div class="col-span-full text-center py-12 text-gray-500 text-sm">
+                    <i class="ph-bold ph-spinner animate-spin text-2xl mb-2 block"></i>
+                    Chargement des cartes collector et des coordonnées GPS...
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION SIMULATEUR WHATSAPP CLOUD API & FLUX DEMANDES -->
+        <div id="whatsapp-simulator-section" class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Colonne Gauche : Demandes Clients & Live Flux (5 cols) -->
+            <div class="lg:col-span-5 space-y-6">
+                <div class="glass-panel rounded-3xl p-6 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            Dernières Demandes Clients
+                        </h3>
+                        <span class="text-[11px] text-gray-400">Temps Réel</span>
+                    </div>
+
+                    <div id="requests-container" class="space-y-3 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
+                        <div class="text-xs text-gray-500 p-4 text-center">Chargement des demandes...</div>
+                    </div>
+                </div>
+
+                <!-- Stats Dashboard -->
+                <div class="glass-panel rounded-3xl p-5 grid grid-cols-2 gap-3 text-center">
+                    <div class="bg-black/30 p-3 rounded-2xl border border-gray-800">
+                        <span id="stat-requests" class="text-2xl font-black text-amber-400 block">-</span>
+                        <span class="text-[10px] text-gray-400 uppercase font-mono">Demandes</span>
+                    </div>
+                    <div class="bg-black/30 p-3 rounded-2xl border border-gray-800">
+                        <span id="stat-providers" class="text-2xl font-black text-yellow-300 block">-</span>
+                        <span class="text-[10px] text-gray-400 uppercase font-mono">Artisans Elite</span>
+                    </div>
+                    <div class="bg-black/30 p-3 rounded-2xl border border-gray-800">
+                        <span id="stat-missions" class="text-2xl font-black text-emerald-400 block">0</span>
+                        <span class="text-[10px] text-gray-400 uppercase font-mono">Missions OK</span>
+                    </div>
+                    <div class="bg-black/30 p-3 rounded-2xl border border-gray-800">
+                        <span id="stat-messages" class="text-2xl font-black text-sky-400 block">-</span>
+                        <span class="text-[10px] text-gray-400 uppercase font-mono">Messages</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colonne Droite : Smartphone WhatsApp Mockup (7 cols) -->
+            <div class="lg:col-span-7 flex justify-center">
+                <div class="w-full max-w-md bg-[#0b141a] border-4 border-[#1f2c34] rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[560px]">
+                    <!-- Header WhatsApp -->
+                    <div class="bg-[#202c33] px-4 py-3 flex items-center justify-between border-b border-[#2a3942] shrink-0">
+                        <div class="flex items-center gap-3">
+                            <div class="relative">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 to-emerald-500 flex items-center justify-center text-black font-extrabold text-base shadow">
+                                    P
+                                </div>
+                                <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-[#202c33] rounded-full"></span>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-slate-100 flex items-center gap-1">
+                                    <span>ProxiMatch Bot</span>
+                                    <i class="ph-fill ph-seal-check text-amber-400 text-sm" title="Compte Officiel Vérifié"></i>
+                                </div>
+                                <div class="text-[10px] text-emerald-400 font-medium">Meta Cloud API v25.0 • En ligne</div>
+                            </div>
+                        </div>
+                        <button type="button" onclick="clearWhatsappMockup()" class="text-xs text-gray-400 hover:text-white px-2 py-1 bg-gray-800/60 rounded cursor-pointer">Effacer</button>
+                    </div>
+
+                    <!-- Zone Messages Scrollable -->
+                    <div id="whatsapp-chat-body" class="flex-1 p-3 overflow-y-auto space-y-3 custom-scrollbar bg-[radial-gradient(#1f2c34_1px,transparent_1px)] [background-size:16px_16px]">
+                        <div class="flex flex-col items-center my-1">
+                            <span class="bg-[#182229] text-[10px] text-slate-400 px-3 py-1 rounded-lg shadow-sm">
+                                🔒 Chiffré de bout en bout • Modération Anti-Désintermédiation Active
+                            </span>
+                        </div>
+                        <div class="flex justify-start">
+                            <div class="bg-[#202c33] text-slate-200 rounded-2xl rounded-tl-none p-3.5 max-w-[85%] text-xs space-y-1.5 shadow border border-[#2a3942]/60">
+                                <p class="font-bold text-amber-400">👋 Bienvenue sur ProxiMatch WhatsApp !</p>
+                                <p class="text-slate-300">Envoyez une demande ou cliquez sur un exemple pour recevoir une carte interactive avec calcul de distance et boutons cliquables.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer Input Saisie WhatsApp -->
+                    <div class="bg-[#202c33] p-2.5 flex items-center gap-2 border-t border-[#2a3942] shrink-0">
+                        <input id="waInputText" type="text" placeholder="Écrire un message WhatsApp..." class="flex-1 bg-[#2a3942] text-xs text-slate-100 placeholder-slate-400 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500" onkeypress="if(event.key==='Enter') sendCustomWhatsapp()">
+                        <button onclick="sendCustomWhatsapp()" class="w-9 h-9 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 shadow">
+                            <i class="ph-bold ph-paper-plane-right text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL AUTHENTIFICATION JWT -->
+    <div id="authModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl p-6 sm:p-8 max-w-md w-full border border-amber-500/30 space-y-5 relative">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg cursor-pointer">
+                <i class="ph-bold ph-x"></i>
+            </button>
+
+            <div class="text-center space-y-1">
+                <div class="w-12 h-12 mx-auto rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-2xl mb-2">
+                    <i class="ph-bold ph-lock-key"></i>
+                </div>
+                <h3 class="text-xl font-extrabold text-white" id="authModalTitle">Connexion ProxiMatch</h3>
+                <p class="text-xs text-gray-400">Authentification sécurisée par jeton JWT & Bcrypt</p>
+            </div>
+
+            <div class="space-y-3">
+                <div id="registerFields" class="hidden space-y-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input id="authFirstName" type="text" placeholder="Prénom" class="w-full bg-darkbg border border-gray-800 rounded-xl p-3 text-xs text-white focus:border-amber-500 outline-none">
+                        <input id="authLastName" type="text" placeholder="Nom" class="w-full bg-darkbg border border-gray-800 rounded-xl p-3 text-xs text-white focus:border-amber-500 outline-none">
+                    </div>
+                    <input id="authPhone" type="text" placeholder="Téléphone (ex: 0612345678)" class="w-full bg-darkbg border border-gray-800 rounded-xl p-3 text-xs text-white focus:border-amber-500 outline-none">
+                </div>
+
+                <div>
+                    <input id="authEmail" type="email" value="client@proximatch.fr" placeholder="Email" class="w-full bg-darkbg border border-gray-800 rounded-xl p-3 text-xs text-white focus:border-amber-500 outline-none">
+                </div>
+                <div>
+                    <input id="authPassword" type="password" value="demo123" placeholder="Mot de passe" class="w-full bg-darkbg border border-gray-800 rounded-xl p-3 text-xs text-white focus:border-amber-500 outline-none">
+                </div>
+            </div>
+
+            <button id="authSubmitBtn" onclick="handleAuthSubmit()" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-sm transition shadow-lg shadow-amber-500/20 cursor-pointer">
+                Se connecter
+            </button>
+
+            <div class="text-center text-xs text-gray-400">
+                <span id="authToggleText">Pas encore de compte ?</span>
+                <button type="button" onclick="toggleAuthMode()" id="authToggleBtn" class="text-amber-400 font-bold ml-1 hover:underline cursor-pointer">Créer un compte</button>
+            </div>
+
+            <div id="authAlert" class="hidden p-3 rounded-xl text-xs border"></div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-gray-800 py-6 text-center text-xs text-gray-500 bg-darkbg">
+        <p>&copy; 2026 ProxiMatch Elite Series • Sécurisé par FastAPI & JWT • Formule de Haversine Intégrée</p>
+    </footer>
+
+    <!-- LOGIQUE JAVASCRIPT & CONNEXION FASTAPI -->
+    <script>
+        let currentAuthMode = 'login'; // 'login' ou 'register'
+        let cachedProviders = [];
+
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        const getUrl = (path) => (window.location.origin && window.location.origin.startsWith('http'))
+            ? path
+            : `http://127.0.0.1:8001${path}`;
+
+        function formatWhatsappText(text) {
+            if (!text) return '';
+            return text
+                .replace(/\*([^\*]+)\*/g, '<strong class="text-amber-300 font-bold">$1</strong>')
+                .replace(/_([^_]+)_/g, '<em class="text-slate-300 italic">$1</em>')
+                .replace(/^>\s*(.+)$/gm, '<div class="pl-2.5 my-1.5 border-l-2 border-amber-400 bg-amber-950/20 text-amber-300 py-0.5 rounded-r text-[11px]">$1</div>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function scrollToSimulator() {
+            document.getElementById('whatsapp-simulator-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // -------------------------------------------------------------
+        // 1. GESTION DES PRESTATAIRES & CARTES COLLECTOR DYNAMIQUES
+        // -------------------------------------------------------------
+        const AVATARS = [
+            "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&q=80&w=300",
+            "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300",
+            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300",
+            "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300",
+            "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300",
+            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=300",
+        ];
+
+        function getCategoryForSkills(skills) {
+            const s = (skills || '').toLowerCase();
+            if (s.includes('plomb') || s.includes('fuite') || s.includes('sanitaire')) return 'plomberie';
+            if (s.includes('menage') || s.includes('nettoy') || s.includes('repass')) return 'menage';
+            if (s.includes('jardin') || s.includes('tonte') || s.includes('haie')) return 'jardinage';
+            if (s.includes('electr') || s.includes('tableau') || s.includes('cable')) return 'electricite';
+            return 'bricolage';
+        }
+
+        // Fonction pour charger dynamiquement les prestataires depuis le backend FastAPI
+        async function loadProviders(category = 'all', lat = 48.8590, lon = 2.3780) {
+            try {
+                let url = `/providers/match-geo?lat=${lat}&lon=${lon}&max_distance_km=30`;
+                if (category !== 'all') {
+                    url += `&skill=${encodeURIComponent(category)}`;
+                }
+
+                const response = await fetch(typeof getUrl === 'function' ? getUrl(url) : url);
+                const data = await response.json();
+                
+                const grid = document.getElementById('providers-grid');
+                if (!grid) return;
+                grid.innerHTML = ''; // Nettoyage de la grille
+
+                const providers = data.providers || [];
+                cachedProviders = providers;
+
+                const countBadge = document.getElementById('providerCountBadge');
+                if (countBadge) {
+                    countBadge.innerText = `${providers.length} Artisans Disponibles`;
+                }
+
+                if (providers.length === 0) {
+                    grid.innerHTML = `<div class="col-span-3 text-center text-gray-400 py-12">Aucun prestataire trouvé dans cette zone.</div>`;
+                    return;
+                }
+
+                providers.forEach((prov, index) => {
+                    const avatarUrl = prov.avatar_url || AVATARS[index % AVATARS.length] || 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&q=80&w=300';
+                    const cardHTML = `
+                        <div class="collector-card rounded-2xl p-6 relative overflow-hidden group cursor-pointer" onclick="openProfile(${prov.id})">
+                            <div class="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg border border-amber-500/30 flex items-center space-x-1">
+                                <i class="ph-fill ph-star text-amber-400"></i>
+                                <span class="text-sm font-bold text-white">${prov.rating || '4.9'}</span>
+                            </div>
+                            <div class="absolute top-4 left-4 text-xs font-mono uppercase tracking-widest text-amber-500/80 font-semibold">Série Pro • #${String(index + 1).padStart(3, '0')}</div>
+                            
+                            <div class="mt-8 mb-6 relative flex justify-center">
+                                <div class="w-32 h-32 rounded-2xl bg-gradient-to-tr from-amber-500/20 to-blue-500/20 p-1 border border-amber-500/40 group-hover:scale-105 transition duration-300">
+                                    <img src="${avatarUrl}" alt="${escapeHtml(prov.name || '')}" class="w-full h-full object-cover rounded-xl">
+                                </div>
+                            </div>
+
+                            <div class="text-center mb-6">
+                                <h3 class="text-xl font-bold text-white group-hover:text-amber-400 transition">${escapeHtml(prov.name || '')}</h3>
+                                <p class="text-sm text-amber-500 font-medium mt-1">${escapeHtml(prov.skill || prov.skills || 'Service Pro')}</p>
+                                <div class="flex items-center justify-center space-x-1 text-xs text-gray-400 mt-2">
+                                    <i class="ph-bold ph-map-pin text-amber-500"></i>
+                                    <span>À ${prov.distance_km !== undefined ? prov.distance_km : 0} km</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 pt-4 border-t border-gray-800 text-center">
+                                <div class="bg-black/30 rounded-xl p-2.5 border border-gray-800/60">
+                                    <span class="text-xs text-gray-400 block uppercase font-mono">Tarif / Heure</span>
+                                    <span class="text-lg font-extrabold text-amber-400">${prov.hourly_rate || prov.rate || 25} €</span>
+                                </div>
+                                <div class="bg-black/30 rounded-xl p-2.5 border border-gray-800/60">
+                                    <span class="text-xs text-gray-400 block uppercase font-mono">Rayon Max</span>
+                                    <span class="text-lg font-extrabold text-white">${prov.max_distance_km || 30} km</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    grid.insertAdjacentHTML('beforeend', cardHTML);
+                });
+
+            } catch (error) {
+                console.error("Erreur lors du chargement des prestataires :", error);
+            }
+        }
+
+        function filterCategory(category) {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.dataset.category === category) {
+                    btn.className = "filter-btn px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition bg-amber-500 text-black shadow-md cursor-pointer";
+                } else {
+                    btn.className = "filter-btn px-5 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition bg-cardbg hover:bg-gray-800 text-gray-300 border border-gray-800 cursor-pointer";
+                }
+            });
+
+            loadProviders(category);
+        }
+
+        function openProfile(id, name, rate) {
+            const prov = (cachedProviders || []).find(p => p.id === id);
+            const provName = name || (prov ? prov.name : `Prestataire #${id}`);
+            const provRate = rate || (prov ? (prov.hourly_rate || prov.rate) : 25);
+            alert(`✨ Profil Elite #${id} : ${provName}\nTarif horaire : ${provRate}€/h\nCalcul orthodromique validé par le moteur Haversine ProxiMatch.`);
+        }
+
+        // -------------------------------------------------------------
+        // 2. GESTION DU SIMULATEUR WHATSAPP CLOUD API
+        // -------------------------------------------------------------
+        function clearWhatsappMockup() {
+            const chatBody = document.getElementById('whatsapp-chat-body');
+            chatBody.innerHTML = `
+                <div class="flex flex-col items-center my-1">
+                    <span class="bg-[#182229] text-[10px] text-slate-400 px-3 py-1 rounded-lg shadow-sm">
+                        🔒 Chiffré de bout en bout • Modération Active
+                    </span>
+                </div>
+                <div class="flex justify-start">
+                    <div class="bg-[#202c33] text-slate-200 rounded-2xl rounded-tl-none p-3.5 max-w-[85%] text-xs space-y-1.5 shadow">
+                        <p class="font-bold text-amber-400">👋 Prêt pour un nouveau test !</p>
+                        <p class="text-slate-300">Exprimez un besoin ci-dessous ou cliquez sur un exemple.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderCustomerBubble(text) {
+            const chatBody = document.getElementById('whatsapp-chat-body');
+            const now = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const bubble = document.createElement('div');
+            bubble.className = "flex justify-end";
+            bubble.innerHTML = `
+                <div class="bg-[#005c4b] text-slate-100 rounded-2xl rounded-tr-none p-3 max-w-[85%] text-xs shadow space-y-1">
+                    <p class="leading-relaxed whitespace-pre-wrap">${escapeHtml(text)}</p>
+                    <div class="flex items-center justify-end gap-1 text-[10px] text-emerald-200/80">
+                        <span>${now}</span>
+                        <i class="ph-fill ph-checks text-sky-300"></i>
+                    </div>
+                </div>
+            `;
+            chatBody.appendChild(bubble);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        function renderBotPayload(payload) {
+            const chatBody = document.getElementById('whatsapp-chat-body');
+            const now = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const msgType = payload.type || 'text';
+            const botContainer = document.createElement('div');
+            botContainer.className = "flex justify-start";
+
+            if (msgType === 'interactive') {
+                const interactive = payload.interactive || {};
+                const header = interactive.header || {};
+                const bodyText = interactive.body?.text || '';
+                const footerText = interactive.footer?.text || '';
+                const buttons = interactive.action?.buttons || [];
+
+                let headerHtml = '';
+                if (header.type === 'image' && header.image?.link) {
+                    headerHtml = `
+                        <div class="rounded-xl overflow-hidden -mx-1 -mt-1 mb-2 border border-slate-700/50 shadow-inner">
+                            <img src="${header.image.link}" alt="Service" class="w-full h-32 object-cover" loading="lazy" />
+                        </div>
+                    `;
+                }
+
+                let buttonsHtml = '';
+                if (buttons.length > 0) {
+                    buttonsHtml = `
+                        <div class="pt-2 border-t border-[#2a3942] flex flex-col gap-1.5">
+                            ${buttons.map(btn => {
+                                const bId = btn.reply?.id || '';
+                                const bTitle = btn.reply?.title || 'Action';
+                                const isAccept = bId.includes('accept');
+                                const btnStyle = isAccept
+                                    ? 'bg-amber-500/30 hover:bg-amber-500/50 text-amber-200 border-amber-500/40 font-bold'
+                                    : 'bg-[#2a3942] hover:bg-[#374248] text-indigo-200 border-slate-600/40';
+                                return `
+                                    <button onclick="clickWhatsappButton('${bId}', '${bTitle.replace(/'/g, "\\'")}')" class="w-full py-2 px-3 rounded-xl border ${btnStyle} text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer">
+                                        <span>${bTitle}</span>
+                                    </button>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                }
+
+                botContainer.innerHTML = `
+                    <div class="bg-[#202c33] text-slate-200 rounded-2xl rounded-tl-none p-3 max-w-[90%] text-xs shadow space-y-2 border border-[#2a3942]/60">
+                        ${headerHtml}
+                        <div class="leading-relaxed text-slate-200">${formatWhatsappText(bodyText)}</div>
+                        ${footerText ? `<div class="text-[10px] text-slate-400 italic">${footerText}</div>` : ''}
+                        ${buttonsHtml}
+                        <div class="flex items-center justify-end gap-1 text-[10px] text-slate-400 pt-0.5">
+                            <span>${now}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const textContent = payload.text?.body || '';
+                botContainer.innerHTML = `
+                    <div class="bg-[#202c33] text-slate-200 rounded-2xl rounded-tl-none p-3 max-w-[85%] text-xs shadow space-y-2 border border-[#2a3942]/60">
+                        <div class="leading-relaxed text-slate-200">${formatWhatsappText(textContent)}</div>
+                        <div class="flex items-center justify-end gap-1 text-[10px] text-slate-400 pt-0.5">
+                            <span>${now}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            chatBody.appendChild(botContainer);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        async function sendWhatsappSim(text) {
+            if (!text) return;
+            renderCustomerBubble(text);
+
+            try {
+                const res = await fetch(getUrl('/whatsapp/simulate'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sender_phone: "33699887766", text: text })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.latest_sent_message?.payload) {
+                        renderBotPayload(data.latest_sent_message.payload);
+                    }
+                    loadDashboardData();
+                }
+            } catch (e) {
+                console.error("Erreur simulation WhatsApp :", e);
+            }
+        }
+
+        async function clickWhatsappButton(buttonId, buttonTitle) {
+            renderCustomerBubble(`👉 Clic : ${buttonTitle}`);
+            try {
+                const res = await fetch(getUrl('/whatsapp/simulate'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sender_phone: "33699887766", button_id: buttonId })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.latest_sent_message?.payload) {
+                        renderBotPayload(data.latest_sent_message.payload);
+                    }
+                    loadDashboardData();
+                }
+            } catch (e) {
+                console.error("Erreur clic bouton :", e);
+            }
+        }
+
+        function sendCustomWhatsapp() {
+            const input = document.getElementById('waInputText');
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+            sendWhatsappSim(text);
+        }
+
+        function fillExample(text) {
+            document.getElementById('userInput').value = text;
+        }
+
+        // -------------------------------------------------------------
+        // 3. SOUMISSION REQUÊTE NLP IA (GEMINI + HAVERSINE)
+        // -------------------------------------------------------------
+        async function submitAiRequest() {
+            const text = document.getElementById('userInput').value.trim();
+            const phone = document.getElementById('userPhone').value.trim();
+            const btn = document.getElementById('submitBtn');
+            const alertBox = document.getElementById('aiAlert');
+
+            if (!text) {
+                alert("Veuillez saisir votre besoin.");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin text-base"></i> <span>Calcul Haversine & IA...</span>`;
+
+            try {
+                const response = await fetch(getUrl('/requests/ai-parse'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, message: text, phone: phone || "0600000000", customer_phone: phone || "0600000000" })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const req = data.request;
+                    const parsed = data.parsed_data;
+                    const best = (data.matches && data.matches.length > 0) ? data.matches[0] : null;
+
+                    alertBox.className = "p-4 rounded-2xl text-xs bg-amber-950/40 border border-amber-500/40 text-amber-200 block space-y-2 shadow-lg";
+                    alertBox.innerHTML = `
+                        <div class="font-extrabold text-amber-400 flex items-center gap-1.5">
+                            <i class="ph-fill ph-check-circle text-emerald-400 text-sm"></i>
+                            <span>Demande extraite & validée (ID #${req.id}) : ${escapeHtml(parsed.title)}</span>
+                        </div>
+                        <div class="text-gray-300">
+                            📍 <strong>Lieu :</strong> ${escapeHtml(parsed.location)} | 💰 <strong>Budget :</strong> ${parsed.max_budget > 0 ? parsed.max_budget + '€' : 'Libre'} | 🏷️ <strong>Métier :</strong> ${escapeHtml(parsed.skills_required)}
+                        </div>
+                        ${best ? `
+                            <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 font-medium">
+                                🎯 <strong>Artisan Recommandé :</strong> ${escapeHtml(best.name)} (Score : <strong>${best.match_score}%</strong> - ${best.hourly_rate}€/h ${best.distance_km !== undefined ? `• 📍 À ${best.distance_km} km` : ''})
+                            </div>
+                        ` : ''}
+                    `;
+                    document.getElementById('userInput').value = '';
+                    loadDashboardData();
+                } else {
+                    const err = await response.json();
+                    alertBox.className = "p-4 rounded-2xl text-xs bg-rose-500/10 border border-rose-500/20 text-rose-400 block";
+                    alertBox.innerText = `❌ Erreur : ${err.detail || "Impossible d'analyser la demande."}`;
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="ph-bold ph-lightning text-base"></i> <span>Lancer le Matching IA & Haversine</span>`;
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 4. CHARGEMENT STATS & DEMANDES
+        // -------------------------------------------------------------
+        async function loadDashboardData() {
+            try {
+                // 1. Demandes
+                const resReq = await fetch(getUrl('/requests'));
+                if (resReq.ok) {
+                    const requests = await resReq.json();
+                    const container = document.getElementById('requests-container');
+                    if (requests && requests.length > 0) {
+                        document.getElementById('stat-requests').innerText = requests.length;
+                        container.innerHTML = requests.slice(-5).reverse().map(req => {
+                            const isAssigned = (req.status === 'assigned' || req.status === 'confirmed');
+                            const badge = isAssigned
+                                ? `<span class="px-2.5 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded-full">Assignée</span>`
+                                : `<span class="px-2.5 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold rounded-full">${escapeHtml(req.status || 'matching')}</span>`;
+                            const btn = isAssigned
+                                ? `<span class="text-[11px] text-emerald-400 font-bold">✓ Validée</span>`
+                                : `<button onclick="acceptMission(${req.id})" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-[11px] font-bold rounded-lg transition cursor-pointer">Accepter</button>`;
+
+                            return `
+                            <div class="bg-black/30 border border-gray-800/80 rounded-2xl p-3.5 space-y-2 hover:border-amber-500/40 transition">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-white truncate">${escapeHtml(req.title)}</span>
+                                    ${badge}
+                                </div>
+                                <div class="flex items-center justify-between text-[11px] text-gray-400 pt-1 border-t border-gray-800/50">
+                                    <span>📍 ${escapeHtml(req.city || 'Paris')}</span>
+                                    <div>${btn}</div>
+                                </div>
+                            </div>
+                            `;
+                        }).join('');
+                    }
+                }
+
+                // 2. Stats
+                const resSum = await fetch(getUrl('/dashboard/summary'));
+                if (resSum.ok) {
+                    const s = await resSum.json();
+                    if (s.total_requests !== undefined) document.getElementById('stat-requests').innerText = s.total_requests;
+                    if (s.total_providers !== undefined) document.getElementById('stat-providers').innerText = s.total_providers;
+                    if (s.matches_accepted !== undefined) document.getElementById('stat-missions').innerText = s.matches_accepted;
+                    if (s.total_messages !== undefined) document.getElementById('stat-messages').innerText = s.total_messages;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function acceptMission(requestId) {
+            try {
+                const res = await fetch(getUrl(`/requests/${requestId}/accept`), { method: 'POST' });
+                if (res.ok) {
+                    alert("Mission acceptée avec succès !");
+                    loadDashboardData();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 5. GESTION AUTHENTIFICATION JWT
+        // -------------------------------------------------------------
+        function openAuthModal() {
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+        function toggleAuthMode() {
+            currentAuthMode = (currentAuthMode === 'login') ? 'register' : 'login';
+            document.getElementById('authModalTitle').innerText = (currentAuthMode === 'login') ? 'Connexion ProxiMatch' : 'Inscription Elite Series';
+            document.getElementById('authSubmitBtn').innerText = (currentAuthMode === 'login') ? 'Se connecter' : 'Créer mon compte';
+            document.getElementById('registerFields').classList.toggle('hidden', currentAuthMode === 'login');
+            document.getElementById('authToggleText').innerText = (currentAuthMode === 'login') ? 'Pas encore de compte ?' : 'Déjà un compte ?';
+            document.getElementById('authToggleBtn').innerText = (currentAuthMode === 'login') ? 'Créer un compte' : 'Se connecter';
+        }
+
+        async function handleAuthSubmit() {
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value.trim();
+            const alertBox = document.getElementById('authAlert');
+
+            if (!email || !password) {
+                alertBox.className = "p-3 rounded-xl text-xs bg-rose-500/10 border border-rose-500/20 text-rose-400 block";
+                alertBox.innerText = "Veuillez remplir tous les champs.";
+                return;
+            }
+
+            try {
+                if (currentAuthMode === 'login') {
+                    const res = await fetch(getUrl('/auth/login'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: email, password: password })
+                    });
+                    if (res.ok) {
+                        const tokenData = await res.json();
+                        localStorage.setItem('proximatch_token', tokenData.access_token);
+                        document.getElementById('authNavText').innerText = tokenData.user_name || "Connecté";
+                        alertBox.className = "p-3 rounded-xl text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 block";
+                        alertBox.innerText = `✅ Connexion réussie ! Bienvenue ${tokenData.user_name || ''}`;
+                        setTimeout(closeAuthModal, 1500);
+                    } else {
+                        const err = await res.json();
+                        alertBox.className = "p-3 rounded-xl text-xs bg-rose-500/10 border border-rose-500/20 text-rose-400 block";
+                        alertBox.innerText = `❌ ${err.detail || 'Identifiants incorrects'}`;
+                    }
+                } else {
+                    const fName = document.getElementById('authFirstName').value.trim();
+                    const lName = document.getElementById('authLastName').value.trim();
+                    const phone = document.getElementById('authPhone').value.trim();
+
+                    const res = await fetch(getUrl('/auth/register'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: email, password: password, first_name: fName, last_name: lName, phone: phone || "0600000000" })
+                    });
+                    if (res.ok) {
+                        alertBox.className = "p-3 rounded-xl text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 block";
+                        alertBox.innerText = "✅ Compte créé avec succès ! Veuillez vous connecter.";
+                        toggleAuthMode();
+                    } else {
+                        const err = await res.json();
+                        alertBox.className = "p-3 rounded-xl text-xs bg-rose-500/10 border border-rose-500/20 text-rose-400 block";
+                        alertBox.innerText = `❌ ${err.detail || 'Erreur lors de la création'}`;
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Initialisation
+        loadProviders();
+        loadDashboardData();
+        setInterval(loadDashboardData, 10000);
+    </script>
+</body>
+</html>
+
