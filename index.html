@@ -26,8 +26,13 @@
                 </div>
                 <span class="text-xl font-black tracking-tight text-white">MARKET<span class="text-amber-500">PLACE</span></span>
             </div>
-            <div class="flex items-center space-x-2 sm:space-x-3" id="nav-auth-container">
-                <!-- Dynamique selon l'état de connexion -->
+            <div class="flex items-center space-x-3" id="nav-auth-container">
+                <button onclick="openAuthModal('provider')" class="text-xs font-bold bg-amber-500 hover:bg-amber-400 text-black px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-amber-500/20">
+                    Publier une Annonce
+                </button>
+                <button onclick="openAuthModal('login')" class="text-xs font-medium bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-xl transition border border-gray-700 cursor-pointer">
+                    Mon Compte
+                </button>
             </div>
         </div>
     </header>
@@ -40,7 +45,7 @@
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                 <div>
                     <h1 class="text-2xl font-bold text-white tracking-tight">Trouvez un prestataire près de chez vous</h1>
-                    <p class="text-xs sm:text-sm text-gray-400 mt-1">Recherche géolocalisée instantanée avec calcul Haversine.</p>
+                    <p class="text-sm text-gray-400 mt-1">Recherche géolocalisée instantanée avec calcul Haversine.</p>
                 </div>
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 w-fit">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-2"></span> GPS & Modération Actifs
@@ -85,26 +90,18 @@
 
     </main>
 
-    <!-- FOOTER -->
-    <footer class="border-t border-gray-800/60 bg-gray-950 py-6 text-center text-xs text-gray-500 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span>&copy; 2026 ProxiMatch Elite. Sécurité Anti-Désintermédiation & Séquestre Stripe.</span>
-            <a href="/docs" target="_blank" class="hover:text-amber-400 transition">Swagger API /docs</a>
-        </div>
-    </footer>
-
-    <!-- Widget Chat Flottant (Le Bot discret en bas à droite) -->
+    <!-- Widget Chat Flottant -->
     <div class="fixed bottom-6 right-6 z-50">
         <div id="chat-window" class="hidden absolute bottom-16 right-0 w-80 sm:w-96 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-96 backdrop-blur-xl">
             <div class="bg-gray-800 p-3 flex justify-between items-center border-b border-gray-700">
                 <span class="text-xs font-bold text-white flex items-center">
-                    <i class="ph-bold ph-chats-circle text-amber-500 mr-2 text-base"></i> Assistant IA ProxiMatch
+                    <i class="ph-bold ph-chats-circle text-amber-500 mr-2 text-base"></i> Assistant
                 </span>
                 <button onclick="toggleChat()" class="text-gray-400 hover:text-white text-sm cursor-pointer">✕</button>
             </div>
             <div id="chat-messages" class="flex-grow p-3 overflow-y-auto text-xs space-y-2 text-gray-300 custom-scrollbar">
-                <div class="bg-gray-800/50 p-2.5 rounded-xl text-gray-200">
-                    👋 Bonjour ! Décrivez votre besoin, notre IA trouve instantanément le meilleur artisan pour vous.
+                <div class="bg-gray-800/50 p-2 rounded-xl text-gray-200">
+                    Bonjour ! Comment puis-je vous aider aujourd'hui ?
                 </div>
             </div>
             <form onsubmit="sendChatMessage(event)" class="p-2 border-t border-gray-800 flex bg-gray-950">
@@ -253,55 +250,122 @@
             }
         }
 
-        function openAuthModal(mode) {
+        function openAuthModal(initialTab = 'login') {
             closeAuthModal();
-            const isProvider = mode === 'provider';
             const modalHTML = `
                 <div id="auth-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
                     <div class="bg-gray-900 border border-gray-800 rounded-3xl max-w-md w-full p-6 relative overflow-hidden shadow-2xl">
                         <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl cursor-pointer">✕</button>
-                        <h3 class="text-2xl font-bold text-white mb-1">${isProvider ? 'Publier une Annonce' : 'Connexion / Inscription'}</h3>
-                        <p class="text-xs text-gray-400 mb-6">${isProvider ? 'Créez votre profil prestataire pour proposer vos services.' : 'Accédez à votre espace personnel.'}</p>
                         
-                        <form onsubmit="handleAuthSubmit(event, '${mode}')" class="space-y-4">
-                            ${isProvider ? `
-                                <div>
-                                    <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Nom / Enseigne</label>
-                                    <input type="text" id="auth-name" placeholder="Ex: Jean Plomberie" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
-                                </div>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Métier</label>
-                                        <select id="auth-skill" class="w-full bg-black/40 border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
-                                            <option value="Plomberie">Plomberie</option>
-                                            <option value="Électricité">Électricité</option>
-                                            <option value="Ménage">Ménage</option>
-                                            <option value="Bricolage">Bricolage</option>
-                                            <option value="Jardinage">Jardinage</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Tarif (€/h)</label>
-                                        <input type="number" id="auth-rate" value="35" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
-                                    </div>
-                                </div>
-                            ` : ''}
-                            <div>
-                                <label class="block text-xs font-mono uppercase text-gray-400 mb-1">E-mail</label>
-                                <input type="email" id="auth-email" placeholder="contact@exemple.fr" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Mot de passe</label>
-                                <input type="password" id="auth-password" placeholder="••••••••" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
-                            </div>
-                            <button type="submit" id="auth-submit-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs py-3 rounded-xl transition mt-2 cursor-pointer shadow-lg shadow-amber-500/20">
-                                ${isProvider ? 'Valider et Publier l\'Annonce' : 'Se Connecter'}
-                            </button>
-                        </form>
+                        <!-- Onglets de bascule Connexion / Inscription -->
+                        <div class="flex border-b border-gray-800 mb-6">
+                            <button onclick="switchAuthTab('login')" id="tab-login" class="flex-1 pb-3 text-xs font-bold text-center border-b-2 border-amber-500 text-white transition cursor-pointer">Connexion</button>
+                            <button onclick="switchAuthTab('register')" id="tab-register" class="flex-1 pb-3 text-xs font-bold text-center border-b-2 border-transparent text-gray-400 hover:text-white transition cursor-pointer">Créer un Compte</button>
+                        </div>
+
+                        <div id="form-container">
+                            <!-- Contenu dynamique -->
+                        </div>
                     </div>
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', modalHTML);
+            switchAuthTab(initialTab === 'provider' ? 'register' : 'login');
+            if (initialTab === 'provider') {
+                setTimeout(() => {
+                    const roleSelect = document.getElementById('reg-role');
+                    if (roleSelect) { roleSelect.value = 'provider'; toggleProviderFields(); }
+                }, 50);
+            }
+        }
+
+        function switchAuthTab(tab) {
+            const loginTabBtn = document.getElementById('tab-login');
+            const regTabBtn = document.getElementById('tab-register');
+            const container = document.getElementById('form-container');
+
+            if (tab === 'login') {
+                loginTabBtn.className = "flex-1 pb-3 text-xs font-bold text-center border-b-2 border-amber-500 text-white transition cursor-pointer";
+                regTabBtn.className = "flex-1 pb-3 text-xs font-bold text-center border-b-2 border-transparent text-gray-400 hover:text-white transition cursor-pointer";
+                
+                container.innerHTML = `
+                    <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-mono uppercase text-gray-400 mb-1">E-mail</label>
+                            <input type="email" id="login-email" required placeholder="votre@email.fr" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Mot de passe</label>
+                            <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-400">Mot de passe oublié ?</span>
+                            <a href="#" onclick="alert('Un e-mail de réinitialisation va être envoyé.')" class="text-amber-500 hover:underline">Récupérer</a>
+                        </div>
+                        <button type="submit" id="login-submit-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs py-3 rounded-xl transition mt-2 cursor-pointer shadow-lg shadow-amber-500/20">
+                            Se Connecter
+                        </button>
+                    </form>
+                `;
+            } else {
+                regTabBtn.className = "flex-1 pb-3 text-xs font-bold text-center border-b-2 border-amber-500 text-white transition cursor-pointer";
+                loginTabBtn.className = "flex-1 pb-3 text-xs font-bold text-center border-b-2 border-transparent text-gray-400 hover:text-white transition cursor-pointer";
+                
+                container.innerHTML = `
+                    <form onsubmit="handleRegisterSubmit(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Je souhaite :</label>
+                            <select id="reg-role" onchange="toggleProviderFields()" class="w-full bg-black/40 border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-white focus:border-amber-500 outline-none cursor-pointer">
+                                <option value="client">Trouver de l'aide (Client)</option>
+                                <option value="provider">Proposer mes services (Prestataire / Annonce)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Nom / Prénom / Enseigne</label>
+                            <input type="text" id="reg-name" required placeholder="Ex: Jean Plomberie" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
+                        </div>
+                        <div id="provider-extra-fields" class="hidden space-y-3">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Métier</label>
+                                    <select id="reg-skill" class="w-full bg-black/40 border border-gray-800 rounded-xl px-2 py-2 text-xs text-white focus:border-amber-500 outline-none cursor-pointer">
+                                        <option value="Plomberie">Plomberie</option>
+                                        <option value="Électricité">Électricité</option>
+                                        <option value="Ménage">Ménage</option>
+                                        <option value="Bricolage">Bricolage</option>
+                                        <option value="Jardinage">Jardinage</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Tarif (€/h)</label>
+                                    <input type="number" id="reg-rate" value="35" class="w-full bg-black/40 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none">
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-mono uppercase text-gray-400 mb-1">E-mail</label>
+                            <input type="email" id="reg-email" required placeholder="contact@exemple.fr" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Mot de passe</label>
+                            <input type="password" id="reg-password" required placeholder="••••••••" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
+                        </div>
+                        <button type="submit" id="reg-submit-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs py-3 rounded-xl transition mt-2 cursor-pointer shadow-lg shadow-amber-500/20">
+                            Créer mon Compte
+                        </button>
+                    </form>
+                `;
+            }
+        }
+
+        function toggleProviderFields() {
+            const role = document.getElementById('reg-role').value;
+            const extra = document.getElementById('provider-extra-fields');
+            if (role === 'provider') {
+                extra.classList.remove('hidden');
+            } else {
+                extra.classList.add('hidden');
+            }
         }
 
         function closeAuthModal() {
@@ -309,22 +373,70 @@
             if (modal) modal.remove();
         }
 
-        async function handleAuthSubmit(event, mode) {
+        async function handleLoginSubmit(event) {
             event.preventDefault();
-            const btn = document.getElementById('auth-submit-btn');
-            if (btn) { btn.disabled = true; btn.innerText = "Traitement en cours..."; }
+            const btn = document.getElementById('login-submit-btn');
+            if (btn) { btn.disabled = true; btn.innerText = "Connexion..."; }
 
-            const email = document.getElementById('auth-email').value.trim();
-            const password = document.getElementById('auth-password').value.trim();
-            const isProvider = mode === 'provider';
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+
+            try {
+                const res = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (res.ok) {
+                    const tokenData = await res.json();
+                    currentUser = {
+                        email,
+                        role: tokenData.role || 'client',
+                        name: tokenData.user_name || email.split('@')[0],
+                        token: tokenData.access_token
+                    };
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    closeAuthModal();
+                    updateNavbar();
+                    alert("✅ Connexion réussie !");
+                    searchProviders();
+                } else {
+                    const err = await res.json();
+                    alert("❌ " + (err.detail || "Identifiants incorrects."));
+                }
+            } catch (err) {
+                currentUser = { email, role: 'client', name: email.split('@')[0] };
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                closeAuthModal();
+                updateNavbar();
+                alert("✅ Connexion réussie !");
+                searchProviders();
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = "Se Connecter"; }
+            }
+        }
+
+        async function handleRegisterSubmit(event) {
+            event.preventDefault();
+            const btn = document.getElementById('reg-submit-btn');
+            if (btn) { btn.disabled = true; btn.innerText = "Création du compte..."; }
+
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-password').value.trim();
+            const role = document.getElementById('reg-role').value;
+            const isProvider = role === 'provider';
+            const name = document.getElementById('reg-name').value.trim();
+            const skill = isProvider ? document.getElementById('reg-skill').value : 'Client';
+            const rate = isProvider ? parseFloat(document.getElementById('reg-rate').value) : 35.0;
 
             const payload = {
                 email,
                 password,
                 role: isProvider ? 'provider' : 'customer',
-                name: isProvider ? document.getElementById('auth-name').value.trim() : email.split('@')[0],
-                skill: isProvider ? document.getElementById('auth-skill').value : 'Services',
-                hourly_rate: isProvider ? parseFloat(document.getElementById('auth-rate').value) : 35.0,
+                name,
+                skill,
+                hourly_rate: rate,
                 max_distance_km: 30,
                 latitude: defaultLat,
                 longitude: defaultLon
@@ -336,41 +448,27 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
-                if (res.ok || res.status === 400) {
-                    // Si 400 (déjà existant) ou 201 créé, tentative de login
-                    const loginRes = await fetch('/api/v1/auth/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, password })
-                    });
-                    
-                    if (loginRes.ok) {
-                        const tokenData = await loginRes.json();
-                        currentUser = { email, role: tokenData.role, token: tokenData.access_token, name: tokenData.user_name };
-                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    } else {
-                        currentUser = { email, role: payload.role, name: payload.name };
-                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    }
 
+                if (res.ok || res.status === 400) {
+                    currentUser = { email, role: payload.role, name: payload.name };
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
                     closeAuthModal();
                     updateNavbar();
-                    alert("✅ Succès ! Vous êtes connecté.");
-                    searchProviders();
+                    alert(isProvider ? "✅ Compte créé et annonce publiée avec succès sur la marketplace !" : "✅ Compte client créé avec succès !");
+                    searchProviders('all');
                 } else {
                     const err = await res.json();
-                    alert("❌ Erreur : " + (err.detail || "Authentification impossible"));
+                    alert("❌ Erreur : " + (err.detail || "Impossible de créer le compte."));
                 }
             } catch (err) {
                 currentUser = { email, role: payload.role, name: payload.name };
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 closeAuthModal();
                 updateNavbar();
-                alert("✅ Connecté avec succès !");
+                alert("✅ Compte créé avec succès !");
                 searchProviders();
             } finally {
-                if (btn) { btn.disabled = false; btn.innerText = isProvider ? "Valider et Publier l'Annonce" : "Se Connecter"; }
+                if (btn) { btn.disabled = false; btn.innerText = "Créer mon Compte"; }
             }
         }
 
@@ -383,10 +481,9 @@
 
         function openDashboard() {
             if (!currentUser) return;
-            alert(`Tableau de bord de ${currentUser.name || currentUser.email} (${currentUser.role === 'provider' ? 'Prestataire' : 'Client'}). Vos missions et réservations sont synchronisées.`);
+            alert(`Ouverture du tableau de bord de ${currentUser.name || currentUser.email} (${currentUser.role === 'provider' ? 'Prestataire' : 'Client'}). Vos annonces et réservations sont synchronisées.`);
         }
 
-        // Recherche Géodésique Dynamique
         async function searchProviders(category = null) {
             const grid = document.getElementById('providers-grid');
             const counter = document.getElementById('results-counter');
@@ -531,7 +628,6 @@
             }
         }
 
-        // Initialisation de la page
         updateNavbar();
         searchProviders();
     </script>
