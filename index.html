@@ -601,73 +601,52 @@
         async function searchProviders(category = null) {
             const grid = document.getElementById('providers-grid');
             const counter = document.getElementById('results-counter');
-            grid.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500 text-xs"><i class="ph-bold ph-spinner animate-spin text-lg mr-2"></i>Recherche des artisans à proximité...</div>';
+            const skillInput = document.getElementById('search-skill');
+            const maxKmInput = document.getElementById('search-max-km');
             
-            const skillInput = document.getElementById('search-skill').value.trim();
-            const radiusInput = document.getElementById('search-max-km').value || 25;
-            const targetSkill = category || skillInput || '';
-
-            let url = `/providers/match-geo?lat=${defaultLat}&lon=${defaultLon}&max_distance_km=${radiusInput}`;
-            if (targetSkill && targetSkill !== 'all') {
-                url += `&skill=${encodeURIComponent(targetSkill)}`;
-            }
-
+            const skillQuery = category !== null ? category : (skillInput ? skillInput.value : '');
+            const maxKmQuery = maxKmInput ? maxKmInput.value : '30';
+            
+            grid.innerHTML = '<p class="text-xs text-gray-500 col-span-full">Chargement des prestataires...</p>';
+            
             try {
-                const res = await fetch(url);
-                const data = await res.json();
+                const url = (skillQuery && skillQuery !== 'all') 
+                    ? `/api/v1/providers?skill=${encodeURIComponent(skillQuery)}&max_km=${encodeURIComponent(maxKmQuery)}`
+                    : `/api/v1/providers?max_km=${encodeURIComponent(maxKmQuery)}`;
+
+                const response = await fetch(url);
+                const result = await response.json();
                 
-                if (res.ok && data.providers && data.providers.length > 0) {
-                    counter.innerText = `${data.count || data.providers.length} trouvés`;
-                    renderProviders(data.providers);
+                if (result.data && result.data.length > 0) {
+                    if (counter) counter.innerText = `${result.data.length} trouvés`;
+                    grid.innerHTML = '';
+                    result.data.forEach(provider => {
+                        grid.innerHTML += `
+                            <div class="bg-gray-900/50 border border-gray-800 p-4 rounded-2xl flex flex-col justify-between hover:border-amber-500/50 transition group">
+                                <div>
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h3 class="font-bold text-sm text-white group-hover:text-amber-400 transition">${escapeHtml(provider.name)}</h3>
+                                        <span class="bg-amber-500/10 text-amber-400 text-[10px] font-mono px-2 py-0.5 rounded-full">${escapeHtml(provider.skill)}</span>
+                                    </div>
+                                    <p class="text-xs text-gray-400 mb-4">Intervention • Rayon ${provider.max_distance_km} km</p>
+                                </div>
+                                <div class="flex items-center justify-between pt-3 border-t border-gray-800">
+                                    <span class="text-xs font-bold text-white">${provider.hourly_rate} € / h</span>
+                                    <button onclick="openBookingModal(${provider.id}, '${escapeHtml(provider.name)}', ${provider.hourly_rate})" class="bg-gray-800 hover:bg-gray-700 text-white text-xs px-3 py-1.5 rounded-xl transition cursor-pointer font-medium">Réserver</button>
+                                </div>
+                            </div>
+                        `;
+                    });
                 } else {
-                    counter.innerText = '0 trouvé';
-                    grid.innerHTML = `
-                        <div class="col-span-full text-center py-12 text-gray-400 text-xs bg-gray-900/30 border border-gray-800 rounded-3xl p-6">
-                            <p class="font-bold text-sm text-gray-300 mb-1">Aucun prestataire trouvé dans ce rayon.</p>
-                            <p class="text-gray-500">Essayez d'augmenter le rayon ou de rechercher une autre spécialité.</p>
-                        </div>
-                    `;
+                    if (counter) counter.innerText = '0 trouvé';
+                    grid.innerHTML = '<p class="text-xs text-gray-500 col-span-full">Aucun prestataire trouvé pour cette recherche.</p>';
                 }
             } catch (err) {
                 console.error(err);
-                grid.innerHTML = '<div class="col-span-full text-center py-8 text-rose-400 text-xs">Erreur de chargement des prestataires.</div>';
+                grid.innerHTML = '<p class="text-xs text-red-400 col-span-full">Erreur de connexion au serveur.</p>';
             }
         }
 
-        function renderProviders(providers) {
-            const grid = document.getElementById('providers-grid');
-            grid.innerHTML = providers.map(prov => {
-                const skillTag = prov.skill || prov.skills || 'Services';
-                const distText = prov.distance_km !== undefined ? `${prov.distance_km} km` : 'Proche';
-                const rateText = prov.hourly_rate || prov.rate || 35;
-                const rating = prov.rating || prov.rating_avg || 4.9;
-
-                return `
-                    <div class="bg-gray-900/50 border border-gray-800 p-4 sm:p-5 rounded-2xl flex flex-col justify-between hover:border-amber-500/50 transition group">
-                        <div>
-                            <div class="flex justify-between items-start mb-2">
-                                <div>
-                                    <h3 class="font-bold text-sm text-white group-hover:text-amber-400 transition">${escapeHtml(prov.name)}</h3>
-                                    <span class="text-[11px] text-gray-400 flex items-center gap-1 mt-0.5">
-                                        <i class="ph-fill ph-map-pin text-amber-500"></i> ${distText} • Rayon ${prov.max_distance_km || 25}km
-                                    </span>
-                                </div>
-                                <span class="bg-amber-500/10 text-amber-400 text-[10px] font-mono px-2 py-0.5 rounded-full uppercase">
-                                    ${escapeHtml(skillTag.split(',')[0])}
-                                </span>
-                            </div>
-                            <p class="text-xs text-gray-400 line-clamp-2 mt-1 mb-4">${escapeHtml(skillTag)}</p>
-                        </div>
-                        <div class="flex items-center justify-between pt-3 border-t border-gray-800">
-                            <span class="text-xs font-bold text-white">${rateText} € / h</span>
-                            <button onclick="openBookingModal(${prov.id}, '${escapeHtml(prov.name)}', ${rateText})" class="bg-gray-800 hover:bg-gray-700 text-white text-xs px-3 py-1.5 rounded-xl transition cursor-pointer font-medium">
-                                Réserver
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
 
         function quickFilter(category) {
             document.querySelectorAll('.category-pill').forEach(btn => {
