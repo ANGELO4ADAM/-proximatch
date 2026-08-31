@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         body { font-family: 'Outfit', sans-serif; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
@@ -15,6 +17,7 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.7); }
     </style>
 </head>
+
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col font-sans antialiased selection:bg-amber-500 selection:text-black">
 
     <!-- Barre de Navigation Contextuelle -->
@@ -73,20 +76,38 @@
             </div>
         </section>
 
-        <!-- Grille de Profils Compacts -->
+        <!-- Grille de Profils Compacts & Vue Carte -->
         <section class="space-y-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <h2 class="text-lg font-bold text-white">Prestataires Disponibles</h2>
-                    <span id="results-counter" class="text-xs bg-amber-500/10 text-amber-400 font-bold px-2 py-0.5 rounded-full">...</span>
+            <!-- Barre de contrôle des vues -->
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex space-x-2">
+                    <button onclick="switchView('grid')" id="btn-view-grid" class="text-xs font-bold bg-amber-500 text-black px-4 py-2 rounded-xl transition cursor-pointer">Vue Grille</button>
+                    <button onclick="switchView('map')" id="btn-view-map" class="text-xs font-bold bg-gray-800 text-gray-300 px-4 py-2 rounded-xl transition border border-gray-700 cursor-pointer">Vue Carte Radar</button>
                 </div>
-                <span class="text-xs text-gray-500">Triés par proximité & avis</span>
+                <div class="text-xs text-gray-400">Mode : <span id="status-badge" class="text-emerald-400 font-bold">● Disponible</span></div>
             </div>
 
-            <div id="providers-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Cartes injectées dynamiquement -->
+            <!-- Grille classique -->
+            <div id="view-grid">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-2">
+                        <h2 class="text-lg font-bold text-white">Prestataires Disponibles</h2>
+                        <span id="results-counter" class="text-xs bg-amber-500/10 text-amber-400 font-bold px-2 py-0.5 rounded-full">...</span>
+                    </div>
+                    <span class="text-xs text-gray-500">Triés par proximité & avis</span>
+                </div>
+
+                <div id="providers-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Cartes injectées dynamiquement -->
+                </div>
+            </div>
+
+            <!-- Vue Carte Interactive (Masquée par défaut) -->
+            <div id="view-map" class="hidden w-full h-[500px] rounded-3xl border border-gray-800 overflow-hidden relative z-10">
+                <div id="leaflet-map" class="w-full h-full"></div>
             </div>
         </section>
+
 
     </main>
 
@@ -652,6 +673,7 @@
                     if (counter) counter.innerText = '0 trouvé';
                     grid.innerHTML = '<p class="text-xs text-gray-500 col-span-full">Aucun prestataire trouvé pour cette recherche.</p>';
                 }
+                if (mapInstance) loadProvidersMarkers();
             } catch (err) {
                 console.error(err);
                 grid.innerHTML = '<p class="text-xs text-red-400 col-span-full">Erreur de connexion au serveur.</p>';
@@ -659,9 +681,102 @@
         }
 
 
+        // -------------------------------------------------------------
+        // GESTION DE LA CARTE LEAFLET & MARQUEURS AVATARS
+        // -------------------------------------------------------------
+        let mapInstance = null;
+        let mapMarkers = [];
+
+        function switchView(viewType) {
+            const gridEl = document.getElementById('view-grid');
+            const mapEl = document.getElementById('view-map');
+            const btnGrid = document.getElementById('btn-view-grid');
+            const btnMap = document.getElementById('btn-view-map');
+
+            if (viewType === 'map') {
+                gridEl.classList.add('hidden');
+                mapEl.classList.remove('hidden');
+                btnMap.className = "text-xs font-bold bg-amber-500 text-black px-4 py-2 rounded-xl transition cursor-pointer";
+                btnGrid.className = "text-xs font-bold bg-gray-800 text-gray-300 px-4 py-2 rounded-xl transition border border-gray-700 cursor-pointer";
+                
+                setTimeout(() => { 
+                    initMap(); 
+                    if (mapInstance) mapInstance.invalidateSize();
+                }, 150);
+            } else {
+                mapEl.classList.add('hidden');
+                gridEl.classList.remove('hidden');
+                btnGrid.className = "text-xs font-bold bg-amber-500 text-black px-4 py-2 rounded-xl transition cursor-pointer";
+                btnMap.className = "text-xs font-bold bg-gray-800 text-gray-300 px-4 py-2 rounded-xl transition border border-gray-700 cursor-pointer";
+            }
+        }
+
+        function initMap() {
+            if (!mapInstance) {
+                mapInstance = L.map('leaflet-map').setView([48.8590, 2.3780], 13);
+                
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; OpenStreetMap & CartoDB',
+                    maxZoom: 19
+                }).addTo(mapInstance);
+            }
+            
+            loadProvidersMarkers();
+        }
+
+        async function loadProvidersMarkers() {
+            try {
+                const skillInput = document.getElementById('search-skill');
+                const maxKmInput = document.getElementById('search-max-km');
+                const skillQuery = skillInput ? skillInput.value.trim() : '';
+                const maxKmQuery = maxKmInput ? maxKmInput.value : '30';
+
+                const url = (skillQuery && skillQuery !== 'all')
+                    ? `/api/v1/providers?skill=${encodeURIComponent(skillQuery)}&max_km=${encodeURIComponent(maxKmQuery)}`
+                    : `/api/v1/providers?max_km=${encodeURIComponent(maxKmQuery)}`;
+
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.data && mapInstance) {
+                    mapMarkers.forEach(m => mapInstance.removeLayer(m));
+                    mapMarkers = [];
+
+                    result.data.forEach(provider => {
+                        const lat = provider.latitude || 48.8590;
+                        const lon = provider.longitude || 2.3780;
+                        const avatar = provider.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb";
+
+                        const customIcon = L.divIcon({
+                            className: 'custom-map-avatar',
+                            html: `<div style="background-image: url('${avatar}'); width: 42px; height: 42px; border-radius: 50%; border: 2.5px solid #f59e0b; background-size: cover; background-position: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); cursor: pointer;"></div>`,
+                            iconSize: [42, 42],
+                            iconAnchor: [21, 21]
+                        });
+
+                        const marker = L.marker([lat, lon], { icon: customIcon })
+                            .addTo(mapInstance)
+                            .bindPopup(`
+                                <div style="color: #111; font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; padding: 2px;">
+                                    <strong style="font-size: 13px; color: #000;">${escapeHtml(provider.name)}</strong><br>
+                                    <span style="color: #d97706; font-weight: 700; font-size: 11px;">${escapeHtml(provider.skill)}</span><br>
+                                    <span style="color: #4b5563;">Tarif : <strong style="color: #111;">${provider.hourly_rate} €/h</strong></span><br>
+                                    <button onclick="openBookingModal(${provider.id}, '${escapeHtml(provider.name)}', ${provider.hourly_rate})" style="margin-top: 6px; background: #f59e0b; color: #000; border: none; padding: 4px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;">Réserver</button>
+                                </div>
+                            `);
+                        
+                        mapMarkers.push(marker);
+                    });
+                }
+            } catch (e) {
+                console.error("Erreur de chargement de la carte", e);
+            }
+        }
 
         function quickFilter(category) {
             document.querySelectorAll('.category-pill').forEach(btn => {
+
+
                 btn.className = 'category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition';
             });
             if (event && event.target) {
