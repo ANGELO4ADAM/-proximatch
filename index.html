@@ -639,14 +639,22 @@
             const maxKmInput = document.getElementById('search-max-km');
             
             const skillQuery = category !== null ? category : (skillInput ? skillInput.value : '');
-            const maxKmQuery = maxKmInput ? maxKmInput.value : '30';
+            const maxKmQuery = maxKmInput ? maxKmInput.value : '25';
             
+            // Coordonnées de référence (Paris / utilisateur)
+            const refLat = defaultLat || 48.8590;
+            const refLon = defaultLon || 2.3780;
+
+            // Mettre à jour le cercle visuel sur la carte
+            updateMapRadius(refLat, refLon, parseFloat(maxKmQuery));
+
             grid.innerHTML = '<p class="text-xs text-gray-500 col-span-full">Chargement des prestataires...</p>';
             
             try {
-                const url = (skillQuery && skillQuery !== 'all') 
-                    ? `/api/v1/providers?skill=${encodeURIComponent(skillQuery)}&max_km=${encodeURIComponent(maxKmQuery)}`
-                    : `/api/v1/providers?max_km=${encodeURIComponent(maxKmQuery)}`;
+                let url = `/api/v1/providers?max_km=${encodeURIComponent(maxKmQuery)}&user_lat=${refLat}&user_lon=${refLon}`;
+                if (skillQuery && skillQuery !== 'all') {
+                    url += `&skill=${encodeURIComponent(skillQuery)}`;
+                }
 
                 const response = await fetch(url);
                 const result = await response.json();
@@ -656,6 +664,7 @@
                     grid.innerHTML = '';
                     result.data.forEach(provider => {
                         const avatar = provider.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb";
+                        const distInfo = provider.distance_km !== undefined ? `📍 À ${provider.distance_km} km` : `Intervention`;
                         grid.innerHTML += `
                             <div class="bg-gray-900/50 border border-gray-800 p-4 rounded-2xl flex flex-col justify-between hover:border-amber-500/50 transition group shadow-lg">
                                 <div>
@@ -666,7 +675,7 @@
                                             <span class="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">${escapeHtml(provider.skill)}</span>
                                         </div>
                                     </div>
-                                    <p class="text-xs text-gray-400 mb-4">Intervention • Rayon ${provider.max_distance_km} km</p>
+                                    <p class="text-xs text-gray-400 mb-4">${distInfo} • Rayon max ${provider.max_distance_km} km</p>
                                 </div>
                                 <div class="flex items-center justify-between pt-3 border-t border-gray-800">
                                     <span class="text-xs font-bold text-white">${provider.hourly_rate} € / h</span>
@@ -677,7 +686,7 @@
                     });
                 } else {
                     if (counter) counter.innerText = '0 trouvé';
-                    grid.innerHTML = '<p class="text-xs text-gray-500 col-span-full">Aucun prestataire trouvé pour cette recherche.</p>';
+                    grid.innerHTML = '<p class="text-xs text-gray-500 col-span-full">Aucun prestataire trouvé dans ce rayon.</p>';
                 }
                 if (mapInstance) loadProvidersMarkers();
             } catch (err) {
@@ -688,10 +697,39 @@
 
 
         // -------------------------------------------------------------
-        // GESTION DE LA CARTE LEAFLET & MARQUEURS AVATARS
+        // GESTION DE LA CARTE LEAFLET, RADAR & MARQUEURS AVATARS
         // -------------------------------------------------------------
         let mapInstance = null;
         let mapMarkers = [];
+        let searchCircle = null;
+
+        function updateMapRadius(lat, lon, radiusKm) {
+            if (!mapInstance) return;
+
+            // Supprimer l'ancien cercle s'il existe
+            if (searchCircle) {
+                mapInstance.removeLayer(searchCircle);
+            }
+
+            // Le rayon en mètres pour Leaflet
+            const radiusMeters = (radiusKm || 15) * 1000;
+
+            // Dessiner le cercle de recherche (périmètre de 5km, 20km, etc.)
+            searchCircle = L.circle([lat, lon], {
+                radius: radiusMeters,
+                color: '#f59e0b',       // Couleur ambre assortie au thème
+                fillColor: '#f59e0b',
+                fillOpacity: 0.1,       // Effet de zone transparente
+                weight: 1.5
+            }).addTo(mapInstance);
+
+            // Ajuster le zoom de la carte pour bien voir tout le cercle
+            try {
+                mapInstance.fitBounds(searchCircle.getBounds());
+            } catch (e) {
+                // fallback
+            }
+        }
 
         function switchView(viewType) {
             const gridEl = document.getElementById('view-grid');
@@ -728,20 +766,25 @@
                 }).addTo(mapInstance);
             }
             
+            const maxKmInput = document.getElementById('search-max-km');
+            const currentKm = maxKmInput ? parseFloat(maxKmInput.value) || 25 : 25;
+            updateMapRadius(defaultLat || 48.8590, defaultLon || 2.3780, currentKm);
             loadProvidersMarkers();
         }
-
 
         async function loadProvidersMarkers() {
             try {
                 const skillInput = document.getElementById('search-skill');
                 const maxKmInput = document.getElementById('search-max-km');
                 const skillQuery = skillInput ? skillInput.value.trim() : '';
-                const maxKmQuery = maxKmInput ? maxKmInput.value : '30';
+                const maxKmQuery = maxKmInput ? maxKmInput.value : '25';
+                const refLat = defaultLat || 48.8590;
+                const refLon = defaultLon || 2.3780;
 
-                const url = (skillQuery && skillQuery !== 'all')
-                    ? `/api/v1/providers?skill=${encodeURIComponent(skillQuery)}&max_km=${encodeURIComponent(maxKmQuery)}`
-                    : `/api/v1/providers?max_km=${encodeURIComponent(maxKmQuery)}`;
+                let url = `/api/v1/providers?max_km=${encodeURIComponent(maxKmQuery)}&user_lat=${refLat}&user_lon=${refLon}`;
+                if (skillQuery && skillQuery !== 'all') {
+                    url += `&skill=${encodeURIComponent(skillQuery)}`;
+                }
 
                 const response = await fetch(url);
                 const result = await response.json();
@@ -762,13 +805,15 @@
                             iconAnchor: [21, 21]
                         });
 
+                        const distText = provider.distance_km !== undefined ? ` • 📍 ${provider.distance_km} km` : '';
+
                         const marker = L.marker([lat, lon], { icon: customIcon })
                             .addTo(mapInstance)
                             .bindPopup(`
                                 <div style="color: #111; font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; padding: 2px;">
                                     <strong style="font-size: 13px; color: #000;">${escapeHtml(provider.name)}</strong><br>
                                     <span style="color: #d97706; font-weight: 700; font-size: 11px;">${escapeHtml(provider.skill)}</span><br>
-                                    <span style="color: #4b5563;">Tarif : <strong style="color: #111;">${provider.hourly_rate} €/h</strong></span><br>
+                                    <span style="color: #4b5563;">Tarif : <strong style="color: #111;">${provider.hourly_rate} €/h</strong>${distText}</span><br>
                                     <button onclick="openBookingModal(${provider.id}, '${escapeHtml(provider.name)}', ${provider.hourly_rate})" style="margin-top: 6px; background: #f59e0b; color: #000; border: none; padding: 4px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%;">Réserver</button>
                                 </div>
                             `);
@@ -780,6 +825,7 @@
                 console.error("Erreur de chargement de la carte", e);
             }
         }
+
 
         function quickFilter(category) {
             document.querySelectorAll('.category-pill').forEach(btn => {

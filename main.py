@@ -90,8 +90,25 @@ def get_sqlalchemy_db():
         db.close()
 
 
+from math import radians, sin, cos, sqrt, atan2, asin
+
+def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """
+    Calcule la distance en kilomètres entre deux points géographiques 
+    en utilisant la formule de Haversine.
+    """
+    R = 6371.0
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat / 2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    return round(R * c, 2)
+
+calculate_distance = calculate_haversine_distance
+
 
 def init_agenda_db(db_cursor):
+
     """Initialise les tables de gestion de l'agenda (créneaux et missions)."""
     db_cursor.execute("""
         CREATE TABLE IF NOT EXISTS provider_slots (
@@ -810,57 +827,54 @@ def list_providers(db: sqlite3.Connection = Depends(get_db)):
 
 @app.get(
     "/api/v1/providers",
-    summary="Lister et filtrer les prestataires par spécialité et rayon maximal",
+    summary="Lister et filtrer les prestataires par spécialité, rayon maximal et coordonnées GPS",
 )
 def get_providers_v1(
     skill: Optional[str] = Query(None, description="Spécialité ou métier de l'artisan"),
     max_km: Optional[float] = Query(30.0, description="Rayon maximal en km"),
+    user_lat: Optional[float] = Query(48.8590, description="Latitude utilisateur"),
+    user_lon: Optional[float] = Query(2.3780, description="Longitude utilisateur"),
     db: sqlite3.Connection = Depends(get_db),
 ):
     cursor = db.cursor()
-    if skill and skill.lower() != "all":
-        cursor.execute(
-            """
-            SELECT id, name, coalesce(skills, 'Général') as skill, hourly_rate, 
-                   coalesce(service_radius_km, 15.0) as max_distance_km, 
-                   coalesce(latitude, 48.8590) as latitude, 
-                   coalesce(longitude, 2.3780) as longitude,
-                   coalesce(avatar_url, 'https://images.unsplash.com/photo-1534528741775-53994a69daeb') as avatar_url
-            FROM provider_profiles 
-            WHERE is_active = 1 AND skills LIKE ?
-            ORDER BY id ASC
-            """,
-            (f"%{skill}%",),
-        )
-    else:
-        cursor.execute(
-            """
-            SELECT id, name, coalesce(skills, 'Général') as skill, hourly_rate, 
-                   coalesce(service_radius_km, 15.0) as max_distance_km, 
-                   coalesce(latitude, 48.8590) as latitude, 
-                   coalesce(longitude, 2.3780) as longitude,
-                   coalesce(avatar_url, 'https://images.unsplash.com/photo-1534528741775-53994a69daeb') as avatar_url
-            FROM provider_profiles 
-            WHERE is_active = 1
-            ORDER BY id ASC
-            """
-        )
-
+    cursor.execute(
+        """
+        SELECT id, name, coalesce(skills, 'Général') as skill, hourly_rate, 
+               coalesce(service_radius_km, 15.0) as max_distance_km, 
+               coalesce(latitude, 48.8590) as latitude, 
+               coalesce(longitude, 2.3780) as longitude,
+               coalesce(avatar_url, 'https://images.unsplash.com/photo-1534528741775-53994a69daeb') as avatar_url
+        FROM provider_profiles 
+        WHERE is_active = 1
+        ORDER BY id ASC
+        """
+    )
     rows = cursor.fetchall()
     providers = []
+    
     for row in rows:
-        providers.append({
-            "id": row["id"],
-            "name": row["name"],
-            "skill": row["skill"],
-            "hourly_rate": row["hourly_rate"],
-            "max_distance_km": row["max_distance_km"],
-            "latitude": row["latitude"],
-            "longitude": row["longitude"],
-            "avatar_url": row["avatar_url"],
-        })
+        p_lat = row["latitude"]
+        p_lon = row["longitude"]
+        dist = calculate_haversine_distance(user_lat, user_lon, p_lat, p_lon)
+        
+        # Filtrage par rayon et par compétence
+        if dist <= max_km:
+            if not skill or skill.lower() == "all" or skill.lower() in row["skill"].lower():
+                providers.append({
+                    "id": row["id"],
+                    "name": row["name"],
+                    "skill": row["skill"],
+                    "hourly_rate": row["hourly_rate"],
+                    "max_distance_km": row["max_distance_km"],
+                    "latitude": row["latitude"],
+                    "longitude": row["longitude"],
+                    "avatar_url": row["avatar_url"],
+                    "distance_km": round(dist, 1)
+                })
 
+    providers.sort(key=lambda p: p["distance_km"])
     return {"status": "success", "data": providers}
+
 
 
 
