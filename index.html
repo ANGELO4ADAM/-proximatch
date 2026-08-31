@@ -53,12 +53,14 @@
         
         <!-- Publicité Latérale Gauche -->
         <aside class="hidden xl:flex xl:col-span-2 bg-gray-900/30 border border-dashed border-gray-800 rounded-3xl p-4 text-center text-gray-600 text-[10px] uppercase tracking-wider flex-col justify-between h-[650px] sticky top-24">
-            <span>Espace Sponsorisé</span>
-            <div class="bg-gray-900/60 p-4 rounded-2xl text-gray-500 flex items-center justify-center h-48 border border-gray-800/80">
-                Publicité / Partenaire
+            <span class="text-amber-500 font-bold">Espace Sponsorisé</span>
+            <div id="sidebar-ad-left" class="bg-gray-900/60 p-4 rounded-2xl text-gray-400 flex flex-col items-center justify-center min-h-48 border border-gray-800/80">
+                <span class="font-bold text-gray-300 text-xs mb-1">Commerce Partenaire</span>
+                <span class="text-[10px] text-gray-500">Contactez l'administrateur pour réserver cet encart 160x600</span>
             </div>
             <span>Annonce 160x600</span>
         </aside>
+
 
         <!-- Section Centrale (Grille ou Carte Pleine Largeur) -->
         <section class="col-span-1 xl:col-span-8 flex flex-col space-y-6">
@@ -129,12 +131,14 @@
 
         <!-- Publicité Latérale Droite -->
         <aside class="hidden xl:flex xl:col-span-2 bg-gray-900/30 border border-dashed border-gray-800 rounded-3xl p-4 text-center text-gray-600 text-[10px] uppercase tracking-wider flex-col justify-between h-[650px] sticky top-24">
-            <span>Espace Sponsorisé</span>
-            <div class="bg-gray-900/60 p-4 rounded-2xl text-gray-500 flex items-center justify-center h-48 border border-gray-800/80">
-                Annonce Artisan Local
+            <span class="text-amber-500 font-bold">Espace Sponsorisé</span>
+            <div id="sidebar-ad-right" class="bg-gray-900/60 p-4 rounded-2xl text-gray-400 flex flex-col items-center justify-center min-h-48 border border-gray-800/80">
+                <span class="font-bold text-gray-300 text-xs mb-1">Annonce Artisan Local</span>
+                <span class="text-[10px] text-gray-500">Diffusez votre activité auprès des clients de votre secteur</span>
             </div>
             <span>Monétisation Active</span>
         </aside>
+
 
     </main>
 
@@ -1168,14 +1172,45 @@
             document.getElementById('info-modal').classList.add('hidden');
         }
 
+        async function loadLocalAds(city = 'Paris') {
+            try {
+                const res = await fetch(`/api/v1/ads/city/${encodeURIComponent(city)}`);
+                const data = await res.json();
+                if (data.ads && data.ads.length > 0) {
+                    const leftAd = document.getElementById('sidebar-ad-left');
+                    const rightAd = document.getElementById('sidebar-ad-right');
+                    
+                    if (leftAd && data.ads[0]) {
+                        leftAd.innerHTML = `
+                            <div class="text-amber-400 font-bold text-xs mb-1">${escapeHtml(data.ads[0].shop)}</div>
+                            <div class="text-[11px] text-gray-300 mb-2 leading-relaxed">${escapeHtml(data.ads[0].text)}</div>
+                            <a href="tel:${data.ads[0].phone}" class="inline-block text-[10px] text-black bg-amber-500 font-bold px-2 py-1 rounded-lg hover:bg-amber-400 transition">📞 ${data.ads[0].phone}</a>
+                        `;
+                    }
+                    if (rightAd && data.ads[1]) {
+                        rightAd.innerHTML = `
+                            <div class="text-amber-400 font-bold text-xs mb-1">${escapeHtml(data.ads[1].shop)}</div>
+                            <div class="text-[11px] text-gray-300 mb-2 leading-relaxed">${escapeHtml(data.ads[1].text)}</div>
+                            <a href="tel:${data.ads[1].phone}" class="inline-block text-[10px] text-black bg-amber-500 font-bold px-2 py-1 rounded-lg hover:bg-amber-400 transition">📞 ${data.ads[1].phone}</a>
+                        `;
+                    }
+                }
+            } catch (e) {
+                console.error("Erreur chargement pubs locales:", e);
+            }
+        }
+
         updateNavbar();
         searchProviders();
         initWebSocketChat();
+        loadLocalAds('Paris');
         window.addEventListener('DOMContentLoaded', () => {
             initWebSocketChat();
+            loadLocalAds('Paris');
         });
 
     </script>
+
 
 </body>
 </html>

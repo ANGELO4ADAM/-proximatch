@@ -262,8 +262,30 @@ def init_db():
             );
         """)
 
+        # 5. Table des encarts publicitaires locaux
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS local_ads (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                shop_name TEXT,
+                city TEXT,
+                banner_text TEXT,
+                contact_phone TEXT,
+                is_active INTEGER DEFAULT 1
+            );
+        """)
+
+        cursor.execute("SELECT count(*) FROM local_ads;")
+        if cursor.fetchone()[0] == 0:
+            conn.execute("""
+                INSERT INTO local_ads (shop_name, city, banner_text, contact_phone, is_active)
+                VALUES 
+                ('Quincaillerie Centrale', 'Paris', 'Matériel de bricolage et outillage professionnel à -15%', '0142334455', 1),
+                ('Bati-Services Bondy', 'Bondy', 'Dépannage plomberie et électricité 7j/7', '0148473322', 1),
+                ('Peinture & Déco Est', 'Montreuil', 'Peintures écologiques et conseils déco personnalisés', '0148556677', 1);
+            """)
 
         # Seed utilisateur de démonstration par défaut si absent
+
         cursor.execute("SELECT count(*) FROM users WHERE id = 1;")
         if cursor.fetchone()[0] == 0:
             conn.execute("""
@@ -486,7 +508,15 @@ class ActivateRequest(BaseModel):
     email: str
 
 
+class AdRequest(BaseModel):
+    shop_name: str
+    city: str
+    banner_text: str
+    contact_phone: str
+
+
 class UserLogin(BaseModel):
+
 
     email: str = Field(..., description="Adresse e-mail")
     password: str = Field(..., description="Mot de passe")
@@ -3842,11 +3872,114 @@ async def check_provider_access(provider_id: int, db: sqlite3.Connection = Depen
             "message": "Vous avez épuisé vos essais gratuits. Passez à l'abonnement illimité pour continuer à développer votre activité !"
         }
 
+
+@app.get(
+    "/api/v1/admin/dashboard",
+    summary="Tableau de bord administrateur avec statistiques globales",
+)
+@app.get(
+    "/admin/dashboard",
+    summary="Tableau de bord administrateur avec statistiques globales",
+)
+async def admin_dashboard(admin_key: str = Query(..., description="Clé secrète d'accès admin"), db: sqlite3.Connection = Depends(get_db)):
+    # Clé de sécurité basique pour protéger l'accès admin
+    if admin_key != "mon_cle_admin_secrete_2026":
+        raise HTTPException(status_code=403, detail="Accès non autorisé.")
+    
+    c = db.cursor()
+    
+    # Statistiques globales de la plateforme
+    c.execute("SELECT COUNT(*) FROM users")
+    total_users = c.fetchone()[0]
+    
+    c.execute("SELECT COUNT(*) FROM provider_quotas WHERE is_premium = 1")
+    total_subscribers = c.fetchone()[0]
+    
+    c.execute("SELECT COUNT(*) FROM local_ads WHERE is_active = 1")
+    active_ads = c.fetchone()[0]
+    
+    return {
+        "status": "success",
+        "stats": {
+            "total_users": total_users,
+            "premium_subscribers": total_subscribers,
+            "active_local_ads": active_ads
+        }
+    }
+
+
+@app.post(
+    "/api/v1/admin/ads/create",
+    summary="Créer ou valider un encart publicitaire local",
+)
+@app.post(
+    "/admin/ads/create",
+    summary="Créer ou valider un encart publicitaire local",
+)
+async def create_local_ad(data: AdRequest, admin_key: str = Query(..., description="Clé secrète d'accès admin"), db: sqlite3.Connection = Depends(get_db)):
+    if admin_key != "mon_cle_admin_secrete_2026":
+        raise HTTPException(status_code=403, detail="Accès non autorisé.")
+    
+    c = db.cursor()
+    
+    # Création de la table des pubs locales si elle n'existe pas
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS local_ads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            shop_name TEXT,
+            city TEXT,
+            banner_text TEXT,
+            contact_phone TEXT,
+            is_active INTEGER DEFAULT 1
+        )
+    ''')
+    
+    c.execute(
+        "INSERT INTO local_ads (shop_name, city, banner_text, contact_phone, is_active) VALUES (?, ?, ?, ?, 1)",
+        (data.shop_name, data.city, data.banner_text, data.contact_phone)
+    )
+    db.commit()
+    
+    return {
+        "status": "success",
+        "message": f"Encart publicitaire pour '{data.shop_name}' à {data.city} ajouté avec succès."
+    }
+
+
+@app.get(
+    "/api/v1/ads/city/{city_name}",
+    summary="Récupération des publicités locales par ville",
+)
+@app.get(
+    "/ads/city/{city_name}",
+    summary="Récupération des publicités locales par ville",
+)
+async def get_city_ads(city_name: str, db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
+    
+    c.execute("SELECT shop_name, banner_text, contact_phone FROM local_ads WHERE lower(city) = ? AND is_active = 1", (city_name.strip().lower(),))
+    ads = c.fetchall()
+    
+    formatted_ads = [
+        {"shop": ad["shop_name"] if isinstance(ad, sqlite3.Row) else ad[0],
+         "text": ad["banner_text"] if isinstance(ad, sqlite3.Row) else ad[1],
+         "phone": ad["contact_phone"] if isinstance(ad, sqlite3.Row) else ad[2]}
+        for ad in ads
+    ]
+    
+    return {
+        "city": city_name,
+        "ads": formatted_ads
+    }
+
+
+if __name__ == "__main__":
     import uvicorn
 
     port = int(os.getenv("PORT", 8001))
     host = os.getenv("HOST", "127.0.0.1")
     uvicorn.run("main:app", host=host, port=port, reload=True)
+
 
 
 
