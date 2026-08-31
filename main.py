@@ -196,8 +196,16 @@ def init_db():
         if "avatar_url" not in existing_cols:
             conn.execute("ALTER TABLE provider_profiles ADD COLUMN avatar_url TEXT DEFAULT 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3';")
 
+        # Migration dynamique pour la table users
+        cursor.execute("PRAGMA table_info(users);")
+        existing_user_cols = {row[1] for row in cursor.fetchall()}
+        if "is_active" not in existing_user_cols:
+            conn.execute("ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1;")
+        if "last_login" not in existing_user_cols:
+            conn.execute("ALTER TABLE users ADD COLUMN last_login TEXT;")
 
         # 2. Tables pour la messagerie anonymisée & Modération
+
         conn.execute("""
             CREATE TABLE IF NOT EXISTS conversations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -463,7 +471,12 @@ UserAuth = UserRegister
 RegisterRequest = UserRegister
 
 
+class ActivateRequest(BaseModel):
+    email: str
+
+
 class UserLogin(BaseModel):
+
     email: str = Field(..., description="Adresse e-mail")
     password: str = Field(..., description="Mot de passe")
 
@@ -719,10 +732,45 @@ def register_user(
     }
 
 
+@app.post(
+    "/api/v1/auth/activate",
+    summary="Activer un compte utilisateur après validation email/SMS",
+)
+@app.post(
+    "/auth/activate",
+    summary="Activer un compte utilisateur après validation email/SMS",
+)
+async def activate_account(data: ActivateRequest, db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
+    
+    # Vérifie si l'utilisateur existe
+    c.execute("SELECT id, is_active FROM users WHERE email = ?", (data.email.strip().lower(),))
+    user = c.fetchone()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
+    
+    is_active_val = user["is_active"] if isinstance(user, sqlite3.Row) else user[1]
+    if is_active_val == 1:
+        return {"status": "info", "message": "Ce compte est déjà activé."}
+    
+    # Activation du compte et mise à jour de la date de dernière activité
+    now_iso = datetime.now(timezone.utc).isoformat()
+    c.execute(
+        "UPDATE users SET is_active = 1, last_login = ? WHERE email = ?",
+        (now_iso, data.email.strip().lower())
+    )
+    db.commit()
+    
+    return {
+        "status": "success",
+        "message": "Compte activé avec succès ! Vous pouvez maintenant accéder à la plateforme."
+    }
 
 
 @app.post(
     "/token",
+
     response_model=Token,
     summary="Connexion standard OAuth2 (Swagger / Client) pour obtenir un token JWT",
 )
