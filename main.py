@@ -4133,6 +4133,81 @@ async def admin_dashboard(admin_key: str = Query(..., description="Clé secrète
     }
 
 
+@app.get(
+    "/api/v1/admin/users-list",
+    summary="Lister tous les utilisateurs pour le back-office admin",
+)
+@app.get(
+    "/admin/users-list",
+    summary="Lister tous les utilisateurs pour le back-office admin",
+)
+async def admin_get_users(
+    admin_key: str = Query(..., description="Clé secrète d'accès admin"),
+    db: sqlite3.Connection = Depends(get_db),
+):
+    if admin_key != "mon_cle_admin_secrete_2026":
+        raise HTTPException(status_code=403, detail="Accès non autorisé.")
+
+    c = db.cursor()
+    c.execute("""
+        SELECT id, coalesce(first_name || ' ' || last_name, email) as name, email, role, is_active, last_login 
+        FROM users 
+        ORDER BY id DESC
+    """)
+    rows = c.fetchall()
+
+    return {
+        "status": "success",
+        "users": [
+            {
+                "id": r[0],
+                "name": r[1] or "Sans nom",
+                "email": r[2],
+                "role": r[3],
+                "is_active": bool(r[4]),
+                "last_login": r[5] or "Jamais",
+            }
+            for r in rows
+        ],
+    }
+
+
+@app.post(
+    "/api/v1/admin/users/{user_id}/toggle-status",
+    summary="Basculer le statut actif/inactif d'un utilisateur",
+)
+@app.post(
+    "/admin/users/{user_id}/toggle-status",
+    summary="Basculer le statut actif/inactif d'un utilisateur",
+)
+async def admin_toggle_user_status(
+    user_id: int,
+    admin_key: str = Query(..., description="Clé secrète d'accès admin"),
+    db: sqlite3.Connection = Depends(get_db),
+):
+    if admin_key != "mon_cle_admin_secrete_2026":
+        raise HTTPException(status_code=403, detail="Accès non autorisé.")
+
+    c = db.cursor()
+    c.execute("SELECT is_active FROM users WHERE id = ?", (user_id,))
+    row = c.fetchone()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
+
+    new_status = 0 if row[0] == 1 else 1
+    c.execute("UPDATE users SET is_active = ? WHERE id = ?", (new_status, user_id))
+    db.commit()
+
+    return {
+        "status": "success",
+        "new_status": new_status,
+        "is_active": bool(new_status),
+        "message": f"Statut de l'utilisateur mis à jour ({'Actif' if new_status else 'Inactif'}).",
+    }
+
+
+
 @app.post(
     "/api/v1/admin/ads/create",
     summary="Créer ou valider un encart publicitaire local",

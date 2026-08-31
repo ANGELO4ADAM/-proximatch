@@ -194,9 +194,12 @@
                 </ul>
             </div>
             <div>
-                <h4 class="font-bold text-white mb-2 uppercase text-[10px] tracking-wider">Contact Admin</h4>
+                <h4 class="font-bold text-white mb-2 uppercase text-[10px] tracking-wider">Contact & Administration</h4>
                 <p class="text-gray-300 mb-1">Support technique & webmaster :</p>
-                <a href="mailto:admin@marketplace.local" class="text-amber-500 hover:underline">admin@marketplace.local</a>
+                <a href="mailto:admin@marketplace.local" class="text-amber-500 hover:underline block mb-2">admin@marketplace.local</a>
+                <button onclick="openAdminPanel()" class="bg-gray-900 hover:bg-gray-800 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-[11px] font-mono transition flex items-center cursor-pointer">
+                    <i class="ph-bold ph-shield-check mr-1.5"></i> Back-Office Admin
+                </button>
             </div>
         </div>
         <div class="max-w-[96%] mx-auto px-4 mt-8 pt-6 border-t border-gray-900 text-center text-gray-600 text-[11px]">
@@ -1130,6 +1133,163 @@
                 alert("Erreur de connexion au serveur.");
             }
         }
+
+        async function openAdminPanel() {
+            const adminKey = prompt("Veuillez entrer la clé d'administration secrète :", "mon_cle_admin_secrete_2026");
+            if (!adminKey) return;
+
+            try {
+                const res = await fetch(`/api/v1/admin/dashboard?admin_key=${encodeURIComponent(adminKey)}`);
+                const data = await res.json();
+
+                if (res.ok) {
+                    const usersRes = await fetch(`/api/v1/admin/users-list?admin_key=${encodeURIComponent(adminKey)}`);
+                    const usersData = await usersRes.json();
+
+                    // Supprime un ancien modal admin si présent
+                    const existingModal = document.getElementById('admin-modal');
+                    if (existingModal) existingModal.remove();
+
+                    const modalHTML = `
+                        <div id="admin-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4 sm:p-6">
+                            <div class="bg-gray-900 border border-gray-800 rounded-3xl max-w-4xl w-full max-h-[88vh] flex flex-col overflow-hidden p-6 relative shadow-2xl">
+                                <button onclick="document.getElementById('admin-modal').remove()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl cursor-pointer">✕</button>
+                                <div class="flex items-center space-x-3 mb-4">
+                                    <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg">
+                                        <i class="ph-bold ph-shield-check"></i>
+                                    </div>
+                                    <div>
+                                        <h2 class="text-xl font-bold text-white">Back-Office Administrateur</h2>
+                                        <p class="text-xs text-gray-400">Pilotage centralisé, métriques globales et modération des comptes</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+                                    <div class="bg-black/40 border border-gray-800 p-4 rounded-2xl">
+                                        <span class="text-[10px] text-gray-400 block font-mono uppercase">Utilisateurs totaux</span>
+                                        <span class="text-2xl font-extrabold text-amber-400">${data.stats.total_users}</span>
+                                    </div>
+                                    <div class="bg-black/40 border border-gray-800 p-4 rounded-2xl">
+                                        <span class="text-[10px] text-gray-400 block font-mono uppercase">Abonnés Premium</span>
+                                        <span class="text-2xl font-extrabold text-emerald-400">${data.stats.premium_subscribers}</span>
+                                    </div>
+                                    <div class="bg-black/40 border border-gray-800 p-4 rounded-2xl">
+                                        <span class="text-[10px] text-gray-400 block font-mono uppercase">Annonces Pub Locales</span>
+                                        <span class="text-2xl font-extrabold text-white">${data.stats.active_local_ads}</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-between items-center mb-2">
+                                    <h3 class="text-xs font-bold text-white uppercase tracking-wider font-mono">Gestion des Utilisateurs (${usersData.users.length})</h3>
+                                    <span class="text-[11px] text-gray-500">Cliquez pour activer/désactiver un compte</span>
+                                </div>
+
+                                <div class="flex-grow overflow-y-auto space-y-2 border border-gray-800 rounded-2xl p-3 bg-black/30 custom-scrollbar max-h-72">
+                                    ${usersData.users.map(u => `
+                                        <div class="flex flex-col sm:flex-row justify-between sm:items-center bg-gray-900/60 p-3 rounded-xl border border-gray-800/80 text-xs gap-2">
+                                            <div>
+                                                <strong class="text-white">${escapeHtml(u.name || 'Sans nom')}</strong> 
+                                                <span class="text-gray-400 text-[11px]">(${escapeHtml(u.email)})</span>
+                                                <span class="text-amber-400 font-mono text-[10px] bg-amber-500/10 px-1.5 py-0.5 rounded ml-1">${escapeHtml(u.role)}</span>
+                                            </div>
+                                            <div class="flex items-center space-x-3 self-end sm:self-auto">
+                                                <span class="font-mono text-[11px] ${u.is_active ? 'text-emerald-400' : 'text-red-400'}">${u.is_active ? '● Actif' : '○ Inactif'}</span>
+                                                <button onclick="toggleUser(${u.id}, '${escapeHtml(adminKey)}')" class="bg-gray-800 hover:bg-gray-700 text-white text-[11px] px-3 py-1 rounded-lg transition cursor-pointer font-medium border border-gray-700">
+                                                    Basculer Statut
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', modalHTML);
+                } else {
+                    alert("❌ Clé d'administration incorrecte (403).");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Erreur de connexion au back-office.");
+            }
+        }
+
+        async function toggleUser(userId, adminKey) {
+            try {
+                const res = await fetch(`/api/v1/admin/users/${userId}/toggle-status?admin_key=${encodeURIComponent(adminKey)}`, { method: 'POST' });
+                if (res.ok) {
+                    const modal = document.getElementById('admin-modal');
+                    if (modal) modal.remove();
+                    // Ré-ouvre automatiquement avec la même clé
+                    const adminKeyPrompt = adminKey;
+                    const resDash = await fetch(`/api/v1/admin/dashboard?admin_key=${encodeURIComponent(adminKeyPrompt)}`);
+                    const data = await resDash.json();
+                    const usersRes = await fetch(`/api/v1/admin/users-list?admin_key=${encodeURIComponent(adminKeyPrompt)}`);
+                    const usersData = await usersRes.json();
+                    
+                    const modalHTML = `
+                        <div id="admin-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4 sm:p-6">
+                            <div class="bg-gray-900 border border-gray-800 rounded-3xl max-w-4xl w-full max-h-[88vh] flex flex-col overflow-hidden p-6 relative shadow-2xl">
+                                <button onclick="document.getElementById('admin-modal').remove()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl cursor-pointer">✕</button>
+                                <div class="flex items-center space-x-3 mb-4">
+                                    <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg">
+                                        <i class="ph-bold ph-shield-check"></i>
+                                    </div>
+                                    <div>
+                                        <h2 class="text-xl font-bold text-white">Back-Office Administrateur</h2>
+                                        <p class="text-xs text-gray-400">Pilotage centralisé, métriques globales et modération des comptes</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+                                    <div class="bg-black/40 border border-gray-800 p-4 rounded-2xl">
+                                        <span class="text-[10px] text-gray-400 block font-mono uppercase">Utilisateurs totaux</span>
+                                        <span class="text-2xl font-extrabold text-amber-400">${data.stats.total_users}</span>
+                                    </div>
+                                    <div class="bg-black/40 border border-gray-800 p-4 rounded-2xl">
+                                        <span class="text-[10px] text-gray-400 block font-mono uppercase">Abonnés Premium</span>
+                                        <span class="text-2xl font-extrabold text-emerald-400">${data.stats.premium_subscribers}</span>
+                                    </div>
+                                    <div class="bg-black/40 border border-gray-800 p-4 rounded-2xl">
+                                        <span class="text-[10px] text-gray-400 block font-mono uppercase">Annonces Pub Locales</span>
+                                        <span class="text-2xl font-extrabold text-white">${data.stats.active_local_ads}</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-between items-center mb-2">
+                                    <h3 class="text-xs font-bold text-white uppercase tracking-wider font-mono">Gestion des Utilisateurs (${usersData.users.length})</h3>
+                                    <span class="text-[11px] text-gray-500">Cliquez pour activer/désactiver un compte</span>
+                                </div>
+
+                                <div class="flex-grow overflow-y-auto space-y-2 border border-gray-800 rounded-2xl p-3 bg-black/30 custom-scrollbar max-h-72">
+                                    ${usersData.users.map(u => `
+                                        <div class="flex flex-col sm:flex-row justify-between sm:items-center bg-gray-900/60 p-3 rounded-xl border border-gray-800/80 text-xs gap-2">
+                                            <div>
+                                                <strong class="text-white">${escapeHtml(u.name || 'Sans nom')}</strong> 
+                                                <span class="text-gray-400 text-[11px]">(${escapeHtml(u.email)})</span>
+                                                <span class="text-amber-400 font-mono text-[10px] bg-amber-500/10 px-1.5 py-0.5 rounded ml-1">${escapeHtml(u.role)}</span>
+                                            </div>
+                                            <div class="flex items-center space-x-3 self-end sm:self-auto">
+                                                <span class="font-mono text-[11px] ${u.is_active ? 'text-emerald-400' : 'text-red-400'}">${u.is_active ? '● Actif' : '○ Inactif'}</span>
+                                                <button onclick="toggleUser(${u.id}, '${escapeHtml(adminKey)}')" class="bg-gray-800 hover:bg-gray-700 text-white text-[11px] px-3 py-1 rounded-lg transition cursor-pointer font-medium border border-gray-700">
+                                                    Basculer Statut
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', modalHTML);
+                } else {
+                    alert("Erreur lors de la mise à jour du statut.");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
 
 
 
