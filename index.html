@@ -78,17 +78,15 @@
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-2"></span> Moteur GPS Haversine & JWT Actifs
                 </span>
 
-                <!-- Bouton Auth JWT -->
-                <button id="authNavBtn" onclick="openAuthModal()" class="px-3.5 py-2 rounded-xl bg-cardbg hover:bg-gray-800 text-gray-200 border border-gray-700 font-semibold text-xs transition flex items-center space-x-1.5 cursor-pointer">
-                    <i class="ph-bold ph-user-circle text-base text-amber-400"></i>
-                    <span id="authNavText">Connexion</span>
+                <!-- Bouton Publier Annonce Prestataire -->
+                <button onclick="openAuthModal()" class="bg-amber-500 hover:bg-amber-400 text-black font-bold px-4 py-2 rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center space-x-1 cursor-pointer text-xs sm:text-sm">
+                    <i class="ph-bold ph-plus-circle mr-1"></i> <span>Publier une Annonce</span>
                 </button>
 
                 <!-- Bouton WhatsApp Simulator -->
-                <button onclick="scrollToSimulator()" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs sm:text-sm transition shadow-lg shadow-amber-500/20 flex items-center space-x-2 cursor-pointer">
-                    <i class="ph-bold ph-chats-circle text-base"></i>
-                    <span class="hidden sm:inline">Tester via WhatsApp</span>
-                    <span class="sm:hidden">WhatsApp</span>
+                <button onclick="scrollToSimulator()" class="px-4 py-2 rounded-xl bg-cardbg hover:bg-gray-800 text-gray-200 border border-gray-700 font-semibold text-xs sm:text-sm transition flex items-center space-x-2 cursor-pointer">
+                    <i class="ph-bold ph-chats-circle text-base text-amber-400"></i>
+                    <span class="hidden sm:inline">WhatsApp</span>
                 </button>
             </div>
         </div>
@@ -760,77 +758,114 @@
         }
 
         // -------------------------------------------------------------
-        // 5. GESTION AUTHENTIFICATION JWT
+        // 5. GESTION AUTHENTIFICATION & PUBLICATION D'ANNONCE
         // -------------------------------------------------------------
         function openAuthModal() {
-            document.getElementById('authModal').classList.remove('hidden');
+            closeAuthModal();
+
+            // Ouvre une modale interactive pour s'inscrire et publier son annonce d'artisan
+            const modalHTML = `
+                <div id="auth-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+                    <div class="bg-gray-900 border border-gray-800 rounded-3xl max-w-md w-full p-6 relative overflow-hidden shadow-2xl">
+                        <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl cursor-pointer">✕</button>
+                        <div class="flex items-center space-x-2 mb-2">
+                            <span class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                                <i class="ph-bold ph-plus-circle text-lg"></i>
+                            </span>
+                            <h3 class="text-2xl font-bold text-white">Espace Prestataire</h3>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-6">Créez votre compte pour publier votre annonce sur ProxiMatch Elite.</p>
+                        
+                        <form id="provider-form" onsubmit="submitProviderAnnouncement(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Nom / Enseigne</label>
+                                <input type="text" id="prov-name" placeholder="Ex: Jean Bricolage Pro" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-white focus:border-amber-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-mono uppercase text-gray-400 mb-1">E-mail</label>
+                                <input type="email" id="prov-email" placeholder="contact@artisan.fr" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-white focus:border-amber-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Mot de passe</label>
+                                <input type="password" id="prov-password" placeholder="••••••••" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-white focus:border-amber-500 outline-none">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Métier / Spécialité</label>
+                                    <select id="prov-skill" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-white focus:border-amber-500 outline-none">
+                                        <option value="menage">Ménage</option>
+                                        <option value="bricolage">Bricolage</option>
+                                        <option value="plomberie">Plomberie</option>
+                                        <option value="jardinage">Jardinage</option>
+                                        <option value="electricite">Électricité</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Tarif (€/h)</label>
+                                    <input type="number" id="prov-rate" value="35" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-white focus:border-amber-500 outline-none">
+                                </div>
+                            </div>
+                            <button type="submit" id="prov-submit-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold py-3 rounded-xl transition mt-4 cursor-pointer shadow-lg shadow-amber-500/20">
+                                Valider et Publier l'Annonce
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
         }
+
         function closeAuthModal() {
-            document.getElementById('authModal').classList.add('hidden');
-        }
-        function toggleAuthMode() {
-            currentAuthMode = (currentAuthMode === 'login') ? 'register' : 'login';
-            document.getElementById('authModalTitle').innerText = (currentAuthMode === 'login') ? 'Connexion ProxiMatch' : 'Inscription Elite Series';
-            document.getElementById('authSubmitBtn').innerText = (currentAuthMode === 'login') ? 'Se connecter' : 'Créer mon compte';
-            document.getElementById('registerFields').classList.toggle('hidden', currentAuthMode === 'login');
-            document.getElementById('authToggleText').innerText = (currentAuthMode === 'login') ? 'Pas encore de compte ?' : 'Déjà un compte ?';
-            document.getElementById('authToggleBtn').innerText = (currentAuthMode === 'login') ? 'Créer un compte' : 'Se connecter';
+            const modal = document.getElementById('auth-modal');
+            if (modal) modal.remove();
         }
 
-        async function handleAuthSubmit() {
-            const email = document.getElementById('authEmail').value.trim();
-            const password = document.getElementById('authPassword').value.trim();
-            const alertBox = document.getElementById('authAlert');
-
-            if (!email || !password) {
-                alertBox.className = "p-3 rounded-xl text-xs bg-rose-500/10 border border-rose-500/20 text-rose-400 block";
-                alertBox.innerText = "Veuillez remplir tous les champs.";
-                return;
+        async function submitProviderAnnouncement(event) {
+            event.preventDefault();
+            const btn = document.getElementById('prov-submit-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = "Publication en cours...";
             }
+
+            const payload = {
+                name: document.getElementById('prov-name').value,
+                email: document.getElementById('prov-email').value,
+                password: document.getElementById('prov-password').value,
+                role: "provider",
+                skill: document.getElementById('prov-skill').value,
+                hourly_rate: parseFloat(document.getElementById('prov-rate').value),
+                max_distance_km: 30,
+                latitude: 48.8590,
+                longitude: 2.3780
+            };
 
             try {
-                if (currentAuthMode === 'login') {
-                    const res = await fetch(getUrl('/auth/login'), {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: email, password: password })
-                    });
-                    if (res.ok) {
-                        const tokenData = await res.json();
-                        localStorage.setItem('proximatch_token', tokenData.access_token);
-                        document.getElementById('authNavText').innerText = tokenData.user_name || "Connecté";
-                        alertBox.className = "p-3 rounded-xl text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 block";
-                        alertBox.innerText = `✅ Connexion réussie ! Bienvenue ${tokenData.user_name || ''}`;
-                        setTimeout(closeAuthModal, 1500);
-                    } else {
-                        const err = await res.json();
-                        alertBox.className = "p-3 rounded-xl text-xs bg-rose-500/10 border border-rose-500/20 text-rose-400 block";
-                        alertBox.innerText = `❌ ${err.detail || 'Identifiants incorrects'}`;
-                    }
+                const response = await fetch(getUrl('/api/v1/auth/register'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert("✅ Annonce publiée avec succès sur la marketplace !");
+                    closeAuthModal();
+                    loadProviders('all'); // Recharge la grille dynamiquement
+                    loadDashboardData();
                 } else {
-                    const fName = document.getElementById('authFirstName').value.trim();
-                    const lName = document.getElementById('authLastName').value.trim();
-                    const phone = document.getElementById('authPhone').value.trim();
-
-                    const res = await fetch(getUrl('/auth/register'), {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: email, password: password, first_name: fName, last_name: lName, phone: phone || "0600000000" })
-                    });
-                    if (res.ok) {
-                        alertBox.className = "p-3 rounded-xl text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 block";
-                        alertBox.innerText = "✅ Compte créé avec succès ! Veuillez vous connecter.";
-                        toggleAuthMode();
-                    } else {
-                        const err = await res.json();
-                        alertBox.className = "p-3 rounded-xl text-xs bg-rose-500/10 border border-rose-500/20 text-rose-400 block";
-                        alertBox.innerText = `❌ ${err.detail || 'Erreur lors de la création'}`;
-                    }
+                    alert("❌ Erreur : " + (result.detail || "Impossible de publier l'annonce"));
                 }
-            } catch (e) {
-                console.error(e);
+            } catch (err) {
+                console.error(err);
+                alert("❌ Erreur de connexion au serveur.");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = "Valider et Publier l'Annonce";
+                }
             }
         }
+
 
         // Initialisation
         loadProviders();

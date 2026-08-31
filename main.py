@@ -414,10 +414,17 @@ def require_role(allowed_roles: list[str]):
 class UserRegister(BaseModel):
     email: str = Field(..., description="Adresse e-mail valide")
     password: str = Field(..., min_length=6, description="Mot de passe (minimum 6 caractères)")
-    first_name: str = Field(..., min_length=2, description="Prénom")
-    last_name: str = Field(..., min_length=2, description="Nom")
-    phone: str = Field(..., description="Numéro de téléphone")
+    first_name: Optional[str] = Field(None, description="Prénom")
+    last_name: Optional[str] = Field(None, description="Nom")
+    name: Optional[str] = Field(None, description="Nom complet ou Enseigne")
+    phone: Optional[str] = Field("0600000000", description="Numéro de téléphone")
     role: Optional[str] = Field("customer", description="Rôle : 'customer', 'provider', 'admin'")
+    skill: Optional[str] = Field(None, description="Spécialité / Métier pour prestataire")
+    hourly_rate: Optional[float] = Field(35.0, description="Tarif horaire")
+    max_distance_km: Optional[float] = Field(30.0, description="Rayon d'action en km")
+    latitude: Optional[float] = Field(48.8590, description="Latitude")
+    longitude: Optional[float] = Field(2.3780, description="Longitude")
+
 
 
 class UserLogin(BaseModel):
@@ -564,6 +571,12 @@ class DashboardSummaryResponse(BaseModel):
     status_code=status.HTTP_201_CREATED,
     summary="Inscription d'un nouvel utilisateur (Client ou Prestataire)",
 )
+@app.post(
+    "/api/v1/auth/register",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Inscription d'un nouvel utilisateur (Client ou Prestataire)",
+)
 def register_user(
     payload: UserRegister,
     db: sqlite3.Connection = Depends(get_db),
@@ -576,6 +589,21 @@ def register_user(
             detail="Cette adresse e-mail est déjà associée à un compte.",
         )
 
+    # Détermination du prénom / nom / nom complet
+    full_name = payload.name.strip() if payload.name else ""
+    if payload.first_name:
+        first_name = payload.first_name.strip()
+        last_name = payload.last_name.strip() if payload.last_name else ""
+    elif full_name:
+        parts = full_name.split(" ", 1)
+        first_name = parts[0]
+        last_name = parts[1] if len(parts) > 1 else "Prestataire"
+    else:
+        first_name = "Utilisateur"
+        last_name = "ProxiMatch"
+
+    display_name = full_name if full_name else f"{first_name} {last_name}".strip()
+    phone_val = payload.phone.strip() if payload.phone else "0600000000"
     hashed_password = get_password_hash(payload.password)
     user_role = payload.role if payload.role in ("customer", "provider", "admin") else "customer"
 
@@ -586,18 +614,44 @@ def register_user(
         """,
         (
             user_role,
-            payload.first_name.strip(),
-            payload.last_name.strip(),
+            first_name,
+            last_name,
             payload.email.strip().lower(),
             hashed_password,
-            payload.phone.strip(),
+            phone_val,
         ),
     )
-    db.commit()
     user_id = cursor.lastrowid
+
+    # Si le rôle est prestataire, enregistrement / indexation dans provider_profiles
+    if user_role == "provider":
+        skill_val = payload.skill.strip() if payload.skill else "bricolage, services à domicile"
+        rate_val = payload.hourly_rate if payload.hourly_rate and payload.hourly_rate > 0 else 35.0
+        dist_val = payload.max_distance_km if payload.max_distance_km and payload.max_distance_km > 0 else 30.0
+        lat_val = payload.latitude if payload.latitude else 48.8590
+        lon_val = payload.longitude if payload.longitude else 2.3780
+
+        cursor.execute(
+            """
+            INSERT INTO provider_profiles (name, skills, postal_codes, hourly_rate, service_radius_km, latitude, longitude, is_active, rating_avg)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1, 4.9)
+            """,
+            (
+                display_name,
+                skill_val,
+                "75001, 75002, 75011, 75012, Paris",
+                rate_val,
+                dist_val,
+                lat_val,
+                lon_val,
+            ),
+        )
+
+    db.commit()
 
     cursor.execute("SELECT id, role, first_name, last_name, email, phone, phone_masked, created_at FROM users WHERE id = ?", (user_id,))
     return dict(cursor.fetchone())
+
 
 
 @app.post(
