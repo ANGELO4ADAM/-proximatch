@@ -3254,9 +3254,47 @@ async def release_funds(data: EscrowReleaseRequest, db: sqlite3.Connection = Dep
     }
 
 
+@app.get(
+    "/api/v1/stripe/invoice/{escrow_id}",
+    summary="Récupérer les détails d'une facture liée à un séquestre",
+)
+async def get_invoice(escrow_id: int, db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
+    c.execute("""
+        SELECT e.id as escrow_id, e.amount, e.status, e.created_at,
+               p.name as provider_name, coalesce(p.skills, 'Général') as skill
+        FROM escrows e
+        JOIN provider_profiles p ON e.provider_id = p.id
+        WHERE e.id = ?
+    """, (escrow_id,))
+    row = c.fetchone()
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Facture introuvable pour ce séquestre.")
+        
+    amount = row["amount"]
+    platform_fee = round(amount * 0.05, 2)
+    provider_total = round(amount - platform_fee, 2)
+    
+    return {
+        "status": "success",
+        "invoice_data": {
+            "invoice_number": f"FAC-2026-{row['escrow_id']:04d}",
+            "date": row["created_at"],
+            "provider_name": row["provider_name"],
+            "service": row["skill"],
+            "total_amount": amount,
+            "platform_fee": platform_fee,
+            "net_to_provider": provider_total,
+            "escrow_status": row["status"]
+        }
+    }
+
+
 # ----------------------------------------------------------------------
 # 11. Module Agenda & Réservation de Créneaux (provider_slots & missions)
 # ----------------------------------------------------------------------
+
 
 class SlotCreate(BaseModel):
     provider_id: int = Field(..., description="ID du prestataire")

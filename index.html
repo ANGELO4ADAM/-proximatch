@@ -1023,9 +1023,32 @@
             }
         }
 
+        async function viewInvoice(escrowId) {
+            try {
+                const response = await fetch(`/api/v1/stripe/invoice/${escrowId}`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    const inv = result.invoice_data;
+                    alert(`--- FACTURE ${inv.invoice_number} ---\n` +
+                          `Date : ${inv.date}\n` +
+                          `Prestataire : ${inv.provider_name} (${inv.service})\n` +
+                          `Montant total séquestré : ${inv.total_amount} €\n` +
+                          `Frais de plateforme (5%) : ${inv.platform_fee} €\n` +
+                          `Net versé au prestataire : ${inv.net_to_provider} €\n` +
+                          `Statut : ${inv.escrow_status}`);
+                } else {
+                    alert(`Erreur : ${result.detail}`);
+                }
+            } catch (err) {
+                console.error("Erreur lors de la récupération de la facture :", err);
+            }
+        }
+
         // -------------------------------------------------------------
         // GESTION DES MODALES D'INFORMATIONS LÉGALES & SUPPORT
         // -------------------------------------------------------------
+
 
         function openInfoModal(type) {
             const modal = document.getElementById('info-modal');
