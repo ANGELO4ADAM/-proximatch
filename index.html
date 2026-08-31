@@ -715,14 +715,16 @@
             if (!mapInstance) {
                 mapInstance = L.map('leaflet-map').setView([48.8590, 2.3780], 13);
                 
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                    attribution: '&copy; OpenStreetMap & CartoDB',
-                    maxZoom: 19
+                // Utilisation du fond de carte officiel OpenStreetMap (100% gratuit)
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap'
                 }).addTo(mapInstance);
             }
             
             loadProvidersMarkers();
         }
+
 
         async function loadProvidersMarkers() {
             try {
