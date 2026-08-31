@@ -478,12 +478,12 @@
                     <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
                         <div>
                             <label class="block text-xs font-mono uppercase text-gray-400 mb-1">E-mail</label>
-                            <input type="email" id="login-email" required placeholder="votre@email.fr" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
+                            <input type="email" id="login-email" required placeholder="votre@email.fr" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none transition">
                         </div>
                         <div>
                             <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Mot de passe</label>
                             <div class="relative">
-                                <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 pr-10 text-xs text-white focus:border-amber-500 outline-none">
+                                <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 pr-10 text-xs text-white focus:border-amber-500 outline-none transition">
                                 <button type="button" onclick="togglePasswordVisibility('login-password', 'toggle-icon-login')" class="absolute right-3 top-2.5 text-gray-400 hover:text-white transition cursor-pointer">
                                     <i id="toggle-icon-login" class="ph-bold ph-eye text-base"></i>
                                 </button>
@@ -493,6 +493,10 @@
                             <span class="text-gray-400">Mot de passe oublié ?</span>
                             <a href="#" onclick="alert('Un e-mail de réinitialisation va être envoyé.')" class="text-amber-500 hover:underline">Récupérer</a>
                         </div>
+
+                        <!-- Conteneur d'erreur stylé (masqué par défaut) -->
+                        <div id="login-error-msg" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 text-xs p-3 rounded-xl text-center"></div>
+
                         <button type="submit" id="login-submit-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs py-3 rounded-xl transition mt-2 cursor-pointer shadow-lg shadow-amber-500/20">
                             Se Connecter
                         </button>
@@ -541,17 +545,21 @@
 
                         <div>
                             <label class="block text-xs font-mono uppercase text-gray-400 mb-1">E-mail</label>
-                            <input type="email" id="reg-email" required placeholder="contact@exemple.fr" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
+                            <input type="email" id="reg-email" required placeholder="contact@exemple.fr" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none transition">
                         </div>
                         <div>
                             <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Mot de passe</label>
                             <div class="relative">
-                                <input type="password" id="reg-password" required placeholder="••••••••" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 pr-10 text-xs text-white focus:border-amber-500 outline-none">
+                                <input type="password" id="reg-password" required placeholder="••••••••" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 pr-10 text-xs text-white focus:border-amber-500 outline-none transition">
                                 <button type="button" onclick="togglePasswordVisibility('reg-password', 'toggle-icon-reg')" class="absolute right-3 top-2.5 text-gray-400 hover:text-white transition cursor-pointer">
                                     <i id="toggle-icon-reg" class="ph-bold ph-eye text-base"></i>
                                 </button>
                             </div>
                         </div>
+
+                        <!-- Conteneur d'erreur stylé (masqué par défaut) -->
+                        <div id="auth-error-msg" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 text-xs p-3 rounded-xl text-center"></div>
+
                         <button type="submit" id="reg-submit-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs py-3 rounded-xl transition mt-2 cursor-pointer shadow-lg shadow-amber-500/20">
                             Créer mon Compte
                         </button>
@@ -594,9 +602,15 @@
         async function handleLoginSubmit(event) {
             event.preventDefault();
             const btn = document.getElementById('login-submit-btn');
+            const emailInput = document.getElementById('login-email');
+            const errorDiv = document.getElementById('login-error-msg');
+
+            if (errorDiv) errorDiv.classList.add('hidden');
+            if (emailInput) emailInput.classList.remove('border-red-500');
+
             if (btn) { btn.disabled = true; btn.innerText = "Connexion..."; }
 
-            const email = document.getElementById('login-email').value.trim();
+            const email = emailInput ? emailInput.value.trim() : '';
             const password = document.getElementById('login-password').value.trim();
 
             try {
@@ -621,15 +635,17 @@
                     searchProviders();
                 } else {
                     const err = await res.json();
-                    alert("❌ " + (err.detail || "Identifiants incorrects."));
+                    if (errorDiv) {
+                        errorDiv.textContent = err.detail || "Identifiants incorrects.";
+                        errorDiv.classList.remove('hidden');
+                    }
+                    if (emailInput) emailInput.classList.add('border-red-500');
                 }
             } catch (err) {
-                currentUser = { email, role: 'client', name: email.split('@')[0] };
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                closeAuthModal();
-                updateNavbar();
-                alert("✅ Connexion réussie !");
-                searchProviders();
+                if (errorDiv) {
+                    errorDiv.textContent = "Erreur de connexion au serveur.";
+                    errorDiv.classList.remove('hidden');
+                }
             } finally {
                 if (btn) { btn.disabled = false; btn.innerText = "Se Connecter"; }
             }
@@ -638,10 +654,17 @@
         async function handleRegisterSubmit(event) {
             event.preventDefault();
             const btn = document.getElementById('reg-submit-btn');
+            const emailInput = document.getElementById('reg-email');
+            const errorDiv = document.getElementById('auth-error-msg');
+
+            // Masquer l'erreur précédente s'il y en a une
+            if (errorDiv) errorDiv.classList.add('hidden');
+            if (emailInput) emailInput.classList.remove('border-red-500');
+
             if (btn) { btn.disabled = true; btn.innerText = "Inscription en cours..."; }
 
             const name = document.getElementById('reg-name').value.trim();
-            const email = document.getElementById('reg-email').value.trim();
+            const email = emailInput ? emailInput.value.trim() : '';
             const password = document.getElementById('reg-password').value;
             const role = document.getElementById('reg-role').value;
             const skill = role === 'provider' ? (document.getElementById('reg-skill') ? document.getElementById('reg-skill').value.trim() : 'Général') : 'Client';
@@ -678,20 +701,24 @@
                     updateNavbar();
                     location.reload();
                 } else {
-                    alert("Erreur d'inscription : " + (result.detail || "Veuillez vérifier les informations saisies."));
+                    // Affichage propre de l'erreur dans la modale au lieu de l'alerte native
+                    if (errorDiv) {
+                        errorDiv.textContent = result.detail || "Cette adresse e-mail est déjà associée à un compte.";
+                        errorDiv.classList.remove('hidden');
+                    }
+                    if (emailInput) emailInput.classList.add('border-red-500');
                 }
             } catch (err) {
                 console.error(err);
-                currentUser = { email, role, name };
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                closeAuthModal();
-                updateNavbar();
-                alert(`Bienvenue sur ProxiMatch, ${name} ! Votre inscription est validée.`);
-                location.reload();
+                if (errorDiv) {
+                    errorDiv.textContent = "Erreur de connexion au serveur.";
+                    errorDiv.classList.remove('hidden');
+                }
             } finally {
                 if (btn) { btn.disabled = false; btn.innerText = "Créer mon Compte"; }
             }
         }
+
 
 
 
