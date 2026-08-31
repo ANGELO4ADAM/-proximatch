@@ -996,8 +996,27 @@
                 subtitle.textContent = "Gérez vos annonces, votre profil et vos missions reçues.";
                 
                 container.innerHTML = `
-                    <!-- Colonne Gauche / Principale : Annonces et Missions -->
+                    <!-- Colonne Gauche / Principale : Annonces, Quotas Freemium et Missions -->
                     <div class="lg:col-span-2 space-y-6">
+                        <!-- Encart Statut & Crédits Freemium -->
+                        <div class="bg-gray-950/50 border border-gray-800 p-5 rounded-2xl space-y-4">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-sm font-bold text-white flex items-center">
+                                    <i class="ph-bold ph-shield-check text-amber-500 mr-2"></i> Statut & Crédits Freemium
+                                </h3>
+                                <span id="provider-status-badge" class="bg-amber-500/10 text-amber-400 text-[10px] font-mono px-2 py-0.5 rounded-full">Chargement...</span>
+                            </div>
+                            
+                            <p id="provider-access-msg" class="text-xs text-gray-400">Vérification de vos quotas de mise en relation en cours...</p>
+                            
+                            <div class="pt-3 border-t border-gray-800 flex items-center justify-between flex-wrap gap-2">
+                                <span class="text-xs text-gray-300">Passez en illimité pour booster votre visibilité :</span>
+                                <button onclick="upgradeToPremium(${currentUser.id || 1})" class="bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-amber-500/20">
+                                    Passer à l'Illimité (9,99€/mois)
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="bg-gray-950/50 border border-gray-800 p-5 rounded-2xl">
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-sm font-bold text-white">Vos Annonces Actives</h3>
@@ -1037,6 +1056,8 @@
                         </div>
                     </div>
                 `;
+                loadProviderQuotaStatus(currentUser.id || 1);
+
             } else {
                 title.textContent = "Espace Client";
                 subtitle.textContent = "Suivi de vos réservations et de vos séquestres bancaires.";
@@ -1060,6 +1081,51 @@
         function closeDashboard() {
             document.getElementById('dashboard-modal').classList.add('hidden');
         }
+
+        async function loadProviderQuotaStatus(providerId) {
+            try {
+                const res = await fetch(`/api/v1/provider/check-access/${providerId}`);
+                const data = await res.json();
+                
+                const badge = document.getElementById('provider-status-badge');
+                const msg = document.getElementById('provider-access-msg');
+                if (!badge || !msg) return;
+                
+                if (data.mode === 'premium_unlimited') {
+                    badge.textContent = "Illimité Actif";
+                    badge.className = "bg-emerald-500/10 text-emerald-400 text-[10px] font-mono px-2 py-0.5 rounded-full";
+                    msg.textContent = "Votre compte bénéficie d'un accès illimité à toutes les demandes du radar.";
+                } else if (data.mode === 'free_trial') {
+                    badge.textContent = `Essai Gratuit (${data.credits_left} crédits)`;
+                    badge.className = "bg-amber-500/10 text-amber-400 text-[10px] font-mono px-2 py-0.5 rounded-full";
+                    msg.textContent = data.message;
+                } else {
+                    badge.textContent = "Quotas Épuisés";
+                    badge.className = "bg-red-500/10 text-red-400 text-[10px] font-mono px-2 py-0.5 rounded-full";
+                    msg.textContent = data.message;
+                }
+            } catch (err) {
+                console.error("Erreur lors de la vérification des quotas :", err);
+            }
+        }
+
+        async function upgradeToPremium(providerId) {
+            try {
+                const res = await fetch(`/api/v1/provider/upgrade-premium/${providerId}`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert("🎉 " + data.message);
+                    loadProviderQuotaStatus(providerId);
+                } else {
+                    alert("Erreur lors de l'activation de l'abonnement : " + (data.detail || "Erreur inconnue"));
+                }
+            } catch (err) {
+                alert("Redirection vers le portail de paiement sécurisé Stripe pour l'abonnement illimité...");
+            }
+        }
+
 
         async function searchProviders(category = null) {
             const grid = document.getElementById('providers-grid');

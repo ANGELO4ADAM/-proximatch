@@ -4052,8 +4052,43 @@ async def check_provider_access(provider_id: int, db: sqlite3.Connection = Depen
         }
 
 
+@app.post(
+    "/api/v1/provider/upgrade-premium/{provider_id}",
+    summary="Activer l'abonnement Premium Illimité pour un prestataire",
+)
+@app.post(
+    "/provider/upgrade-premium/{provider_id}",
+    summary="Activer l'abonnement Premium Illimité pour un prestataire",
+)
+async def upgrade_provider_premium(provider_id: int, db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
+    # Calcul de la date de fin dans 30 jours
+    end_date = (datetime.now(timezone.utc) + timedelta(days=30)).strftime('%Y-%m-%d %H:%M:%S')
+
+    c.execute("SELECT provider_id FROM provider_quotas WHERE provider_id = ?", (provider_id,))
+    if not c.fetchone():
+        c.execute(
+            "INSERT INTO provider_quotas (provider_id, credits_remaining, is_premium, subscription_end_date) VALUES (?, 999, 1, ?)",
+            (provider_id, end_date),
+        )
+    else:
+        c.execute(
+            "UPDATE provider_quotas SET is_premium = 1, subscription_end_date = ? WHERE provider_id = ?",
+            (end_date, provider_id),
+        )
+    db.commit()
+
+    return {
+        "status": "success",
+        "message": "Félicitations ! Votre abonnement illimité (9,99€/mois) est maintenant actif.",
+        "subscription_end_date": end_date,
+        "is_premium": 1
+    }
+
+
 @app.get(
     "/api/v1/admin/dashboard",
+
     summary="Tableau de bord administrateur avec statistiques globales",
 )
 @app.get(
