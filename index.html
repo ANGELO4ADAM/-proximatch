@@ -46,74 +46,95 @@
         </div>
     </header>
 
-    <!-- Contenu Principal -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full space-y-8">
+    <!-- Structure Principale avec Blocs Publicitaires Latéraux -->
+    <main class="max-w-[1400px] mx-auto px-4 flex-grow w-full grid grid-cols-1 lg:grid-cols-12 gap-6 py-6">
         
-        <!-- Recherche Haversine Simple -->
-        <section class="bg-gray-900/40 border border-gray-800 p-6 sm:p-8 rounded-3xl backdrop-blur-sm shadow-xl">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                <div>
-                    <h1 class="text-2xl font-bold text-white tracking-tight">Trouvez un prestataire près de chez vous</h1>
-                    <p class="text-sm text-gray-400 mt-1">Recherche géolocalisée instantanée avec calcul Haversine.</p>
-                </div>
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 w-fit">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-2"></span> GPS & Modération Actifs
-                </span>
+        <!-- Publicité Gauche (Visible uniquement sur grands écrans) -->
+        <aside class="hidden lg:block lg:col-span-2 bg-gray-900/20 border border-dashed border-gray-800 rounded-2xl p-4 text-center text-gray-600 text-[10px] uppercase tracking-wider flex flex-col justify-between h-[650px] sticky top-24">
+            <span>Espace Publicitaire (160x600)</span>
+            <div class="bg-gray-900/50 p-3 rounded-xl text-gray-500 border border-gray-800">
+                Monétisation Adsense / Partenaires
             </div>
+            <span>Annonce</span>
+        </aside>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <input type="text" id="search-skill" onkeyup="if(event.key === 'Enter') searchProviders()" placeholder="Ex: Plomberie, Ménage, Bricolage..." class="bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-500 outline-none transition">
-                <input type="number" id="search-max-km" placeholder="Rayon (km)" value="25" min="1" max="100" class="bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-500 outline-none transition">
-                <button onclick="searchProviders()" class="bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm px-6 py-3 rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center justify-center space-x-2 cursor-pointer">
-                    <i class="ph-bold ph-magnifying-glass text-base"></i>
-                    <span>Rechercher</span>
-                </button>
-            </div>
-
-            <!-- Filtres Rapides -->
-            <div class="flex items-center gap-2 mt-4 overflow-x-auto custom-scrollbar pb-1 text-xs">
-                <span class="text-gray-500 font-semibold mr-1">Filtres :</span>
-                <button onclick="quickFilter('all')" class="category-pill px-3 py-1.5 rounded-xl bg-amber-500 text-black font-bold transition">Tous</button>
-                <button onclick="quickFilter('Plomberie')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Plomberie</button>
-                <button onclick="quickFilter('Électricité')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Électricité</button>
-                <button onclick="quickFilter('Ménage')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Ménage</button>
-                <button onclick="quickFilter('Bricolage')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Bricolage</button>
-                <button onclick="quickFilter('Jardinage')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Jardinage</button>
-            </div>
-        </section>
-
-        <!-- Grille de Profils Compacts & Vue Carte -->
-        <section class="space-y-4">
-            <!-- Barre de contrôle des vues -->
-            <div class="flex justify-between items-center mb-6">
-                <div class="flex space-x-2">
-                    <button onclick="switchView('grid')" id="btn-view-grid" class="text-xs font-bold bg-amber-500 text-black px-4 py-2 rounded-xl transition cursor-pointer">Vue Grille</button>
-                    <button onclick="switchView('map')" id="btn-view-map" class="text-xs font-bold bg-gray-800 text-gray-300 px-4 py-2 rounded-xl transition border border-gray-700 cursor-pointer">Vue Carte Radar</button>
-                </div>
-                <div class="text-xs text-gray-400">Mode : <span id="status-badge" class="text-emerald-400 font-bold">● Disponible</span></div>
-            </div>
-
-            <!-- Grille classique -->
-            <div id="view-grid">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center space-x-2">
-                        <h2 class="text-lg font-bold text-white">Prestataires Disponibles</h2>
-                        <span id="results-counter" class="text-xs bg-amber-500/10 text-amber-400 font-bold px-2 py-0.5 rounded-full">...</span>
+        <!-- Contenu Central (Recherche, Grille ou Carte) -->
+        <section class="col-span-1 lg:col-span-8 flex flex-col space-y-8">
+            
+            <!-- Recherche Haversine Simple -->
+            <div class="bg-gray-900/40 border border-gray-800 p-6 sm:p-8 rounded-3xl backdrop-blur-sm shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                    <div>
+                        <h1 class="text-2xl font-bold text-white tracking-tight">Trouvez un prestataire près de chez vous</h1>
+                        <p class="text-sm text-gray-400 mt-1">Recherche géolocalisée instantanée avec calcul Haversine.</p>
                     </div>
-                    <span class="text-xs text-gray-500">Triés par proximité & avis</span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 w-fit">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-2"></span> GPS & Modération Actifs
+                    </span>
                 </div>
 
-                <div id="providers-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Cartes injectées dynamiquement -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <input type="text" id="search-skill" onkeyup="if(event.key === 'Enter') searchProviders()" placeholder="Ex: Plomberie, Ménage, Bricolage..." class="bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-500 outline-none transition">
+                    <input type="number" id="search-max-km" placeholder="Rayon (km)" value="25" min="1" max="100" class="bg-black/50 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-500 outline-none transition">
+                    <button onclick="searchProviders()" class="bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm px-6 py-3 rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center justify-center space-x-2 cursor-pointer">
+                        <i class="ph-bold ph-magnifying-glass text-base"></i>
+                        <span>Rechercher</span>
+                    </button>
+                </div>
+
+                <!-- Filtres Rapides -->
+                <div class="flex items-center gap-2 mt-4 overflow-x-auto custom-scrollbar pb-1 text-xs">
+                    <span class="text-gray-500 font-semibold mr-1">Filtres :</span>
+                    <button onclick="quickFilter('all')" class="category-pill px-3 py-1.5 rounded-xl bg-amber-500 text-black font-bold transition">Tous</button>
+                    <button onclick="quickFilter('Plomberie')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Plomberie</button>
+                    <button onclick="quickFilter('Électricité')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Électricité</button>
+                    <button onclick="quickFilter('Ménage')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Ménage</button>
+                    <button onclick="quickFilter('Bricolage')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Bricolage</button>
+                    <button onclick="quickFilter('Jardinage')" class="category-pill px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 font-medium transition">Jardinage</button>
                 </div>
             </div>
 
-            <!-- Vue Carte Interactive (Masquée par défaut) -->
-            <div id="view-map" class="hidden w-full h-[500px] rounded-3xl border border-gray-800 overflow-hidden relative z-10">
-                <div id="leaflet-map" class="w-full h-full"></div>
+            <!-- Grille de Profils Compacts & Vue Carte -->
+            <div class="space-y-4">
+                <!-- Barre de contrôle des vues -->
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex space-x-2">
+                        <button onclick="switchView('grid')" id="btn-view-grid" class="text-xs font-bold bg-amber-500 text-black px-4 py-2 rounded-xl transition cursor-pointer">Vue Grille</button>
+                        <button onclick="switchView('map')" id="btn-view-map" class="text-xs font-bold bg-gray-800 text-gray-300 px-4 py-2 rounded-xl transition border border-gray-700 cursor-pointer">Vue Carte Radar</button>
+                    </div>
+                    <div class="text-xs text-gray-400">Mode : <span id="status-badge" class="text-emerald-400 font-bold">● Disponible</span></div>
+                </div>
+
+                <!-- Grille classique -->
+                <div id="view-grid">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-2">
+                            <h2 class="text-lg font-bold text-white">Prestataires Disponibles</h2>
+                            <span id="results-counter" class="text-xs bg-amber-500/10 text-amber-400 font-bold px-2 py-0.5 rounded-full">...</span>
+                        </div>
+                        <span class="text-xs text-gray-500">Triés par proximité & avis</span>
+                    </div>
+
+                    <div id="providers-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Cartes injectées dynamiquement -->
+                    </div>
+                </div>
+
+                <!-- Vue Carte Interactive (Masquée par défaut) -->
+                <div id="view-map" class="hidden w-full h-[500px] rounded-3xl border border-gray-800 overflow-hidden relative z-10">
+                    <div id="leaflet-map" class="w-full h-full"></div>
+                </div>
             </div>
         </section>
 
+        <!-- Publicité Droite (Visible uniquement sur grands écrans) -->
+        <aside class="hidden lg:block lg:col-span-2 bg-gray-900/20 border border-dashed border-gray-800 rounded-2xl p-4 text-center text-gray-600 text-[10px] uppercase tracking-wider flex flex-col justify-between h-[650px] sticky top-24">
+            <span>Espace Sponsorisé</span>
+            <div class="bg-gray-900/50 p-3 rounded-xl text-gray-500 border border-gray-800">
+                Offres pro & mises en avant
+            </div>
+            <span>Annonce</span>
+        </aside>
 
     </main>
 
@@ -143,13 +164,40 @@
         </div>
     </div>
 
-    <!-- FOOTER -->
-    <footer class="border-t border-gray-800/60 bg-gray-950 py-6 text-center text-xs text-gray-500 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span>&copy; 2026 ProxiMatch Elite. Sécurité Anti-Désintermédiation & Séquestre Stripe.</span>
-            <a href="/docs" target="_blank" class="hover:text-amber-400 transition">Swagger API /docs</a>
+    <!-- FOOTER PROFESSIONNEL -->
+    <footer class="border-t border-gray-800/60 bg-gray-950 mt-12 py-8 px-4 text-xs text-gray-400">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div>
+                <span class="text-sm font-black tracking-tight text-white">MARKET<span class="text-amber-500">PLACE</span></span>
+                <p class="mt-2 text-gray-500">La mise en relation locale, sécurisée par séquestre et géolocalisée.</p>
+            </div>
+            <div>
+                <h4 class="font-bold text-white mb-2 uppercase text-[10px] tracking-wider">Navigation</h4>
+                <ul class="space-y-1.5">
+                    <li><a href="#" onclick="resetFilters()" class="hover:text-amber-400 transition">Accueil</a></li>
+                    <li><a href="#" onclick="openAuthModal('provider')" class="hover:text-amber-400 transition">Devenir Prestataire</a></li>
+                    <li><a href="#" onclick="switchView('map')" class="hover:text-amber-400 transition">Carte Radar</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-white mb-2 uppercase text-[10px] tracking-wider">Support & Légal</h4>
+                <ul class="space-y-1.5">
+                    <li><a href="#" onclick="alert('Centre d\'aide disponible 24/7 via l\'assistant')" class="hover:text-amber-400 transition">Centre d'aide</a></li>
+                    <li><a href="#" onclick="alert('Paiements et séquestre garantis par Stripe Connect')" class="hover:text-amber-400 transition">Conditions Générales</a></li>
+                    <li><a href="#" onclick="alert('Vos données sont protégées et anonymisées')" class="hover:text-amber-400 transition">Politique de Confidentialité</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-white mb-2 uppercase text-[10px] tracking-wider">Contact Admin</h4>
+                <p class="text-gray-300 mb-1">Support technique & webmaster :</p>
+                <a href="mailto:admin@marketplace.local" class="text-amber-500 hover:underline">admin@marketplace.local</a>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 mt-8 pt-6 border-t border-gray-900 text-center text-gray-600 text-[11px]">
+            &copy; 2026 Marketplace Locale. Tous droits réservés.
         </div>
     </footer>
+
 
     <!-- Widget Chat Flottant -->
     <div class="fixed bottom-6 right-6 z-50">
