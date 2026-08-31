@@ -803,6 +803,59 @@ def list_providers(db: sqlite3.Connection = Depends(get_db)):
     return [dict(row) for row in rows]
 
 
+@app.get(
+    "/api/v1/providers",
+    summary="Lister et filtrer les prestataires par spécialité et rayon maximal",
+)
+def get_providers_v1(
+    skill: Optional[str] = Query(None, description="Spécialité ou métier de l'artisan"),
+    max_km: Optional[float] = Query(30.0, description="Rayon maximal en km"),
+    db: sqlite3.Connection = Depends(get_db),
+):
+    cursor = db.cursor()
+    if skill and skill.lower() != "all":
+        cursor.execute(
+            """
+            SELECT id, name, coalesce(skills, 'Général') as skill, hourly_rate, 
+                   coalesce(service_radius_km, 15.0) as max_distance_km, 
+                   coalesce(latitude, 48.8590) as latitude, 
+                   coalesce(longitude, 2.3780) as longitude
+            FROM provider_profiles 
+            WHERE is_active = 1 AND skills LIKE ?
+            ORDER BY id ASC
+            """,
+            (f"%{skill}%",),
+        )
+    else:
+        cursor.execute(
+            """
+            SELECT id, name, coalesce(skills, 'Général') as skill, hourly_rate, 
+                   coalesce(service_radius_km, 15.0) as max_distance_km, 
+                   coalesce(latitude, 48.8590) as latitude, 
+                   coalesce(longitude, 2.3780) as longitude
+            FROM provider_profiles 
+            WHERE is_active = 1
+            ORDER BY id ASC
+            """
+        )
+
+    rows = cursor.fetchall()
+    providers = []
+    for row in rows:
+        providers.append({
+            "id": row["id"],
+            "name": row["name"],
+            "skill": row["skill"],
+            "hourly_rate": row["hourly_rate"],
+            "max_distance_km": row["max_distance_km"],
+            "latitude": row["latitude"],
+            "longitude": row["longitude"],
+        })
+
+    return {"status": "success", "data": providers}
+
+
+
 class ProviderProfileCreate(BaseModel):
     name: str = Field(..., description="Nom complet ou raison sociale de l'artisan")
     skill: str = Field(..., description="Compétences ou métier (ex: plomberie, électricité, ménage)")
