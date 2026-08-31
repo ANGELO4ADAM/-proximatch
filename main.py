@@ -295,6 +295,19 @@ def init_db():
             );
         """)
 
+        # 7. Table des avis et évaluations certifiés prestataires
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS provider_reviews (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                provider_id INTEGER NOT NULL,
+                client_email TEXT NOT NULL,
+                rating INTEGER CHECK(rating >= 1 AND rating <= 5),
+                comment TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (provider_id) REFERENCES provider_profiles (id)
+            );
+        """)
+
         cursor.execute("SELECT count(*) FROM local_ads;")
         if cursor.fetchone()[0] == 0:
             conn.execute("""
@@ -304,6 +317,17 @@ def init_db():
                 ('Bati-Services Bondy', 'Bondy', 'Dépannage plomberie et électricité 7j/7', '0148473322', 1),
                 ('Peinture & Déco Est', 'Montreuil', 'Peintures écologiques et conseils déco personnalisés', '0148556677', 1);
             """)
+
+        cursor.execute("SELECT count(*) FROM provider_reviews;")
+        if cursor.fetchone()[0] == 0:
+            conn.execute("""
+                INSERT INTO provider_reviews (provider_id, client_email, rating, comment)
+                VALUES 
+                (1, 'sophie.martin@example.com', 5, 'Intervention rapide et ponctuelle à Bondy ! Travail soigné.'),
+                (1, 'marc.dupont@example.com', 5, 'Excellent artisan, très professionnel et poli.'),
+                (2, 'claire.bernard@example.com', 4, 'Bon travail sur le tableau électrique, je recommande.');
+            """)
+
 
         # Seed utilisateur de démonstration par défaut si absent
 
@@ -564,6 +588,31 @@ class NotificationLogResponse(BaseModel):
     message: str
     status: str
     created_at: str
+
+
+class ReviewCreateRequest(BaseModel):
+    provider_id: int = Field(..., description="ID du prestataire concerné")
+    client_email: str = Field(..., description="E-mail du client émetteur de l'avis")
+    rating: int = Field(..., ge=1, le=5, description="Note de 1 à 5 étoiles")
+    comment: Optional[str] = Field(None, description="Commentaire sur la prestation")
+
+
+class ReviewResponse(BaseModel):
+    id: int
+    provider_id: int
+    client_email: str
+    rating: int
+    comment: Optional[str] = None
+    created_at: str
+
+
+class ProviderReviewsListResponse(BaseModel):
+    provider_id: int
+    provider_name: Optional[str] = None
+    average_rating: float
+    total_reviews: int
+    reviews: List[ReviewResponse]
+
 
 
 
@@ -4303,7 +4352,125 @@ def get_notifications_history(
     }
 
 
+# ----------------------------------------------------------------------
+# 14. Module Avis Clients et Évaluations Certifiées (provider_reviews)
+# ----------------------------------------------------------------------
+@app.post(
+    "/api/v1/providers/{provider_id}/reviews",
+    response_model=ReviewResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Ajouter un avis et une note (1 à 5 étoiles) pour un prestataire",
+)
+@app.post(
+    "/api/v1/reviews",
+    response_model=ReviewResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Ajouter un avis et une note (1 à 5 étoiles) pour un prestataire",
+)
+async def create_provider_review(
+    payload: ReviewCreateRequest,
+    provider_id: Optional[int] = None,
+    db: sqlite3.Connection = Depends(get_db),
+):
+    target_provider_id = provider_id if provider_id is not None else payload.provider_id
+    c = db.cursor()
+
+    # Vérification de l'existence du prestataire
+    c.execute("SELECT id, name FROM provider_profiles WHERE id = ?", (target_provider_id,))
+    prov = c.fetchone()
+    if not prov:
+        raise HTTPException(status_code=404, detail="Prestataire introuvable.")
+
+    # Insertion de l'avis
+    c.execute(
+        """
+        INSERT INTO provider_reviews (provider_id, client_email, rating, comment)
+        VALUES (?, ?, ?, ?)
+        """,
+        (target_provider_id, payload.client_email.strip().lower(), payload.rating, payload.comment),
+    )
+    review_id = c.lastrowid
+
+    # Recalcul de la note moyenne et mise à jour dans provider_profiles
+    c.execute("SELECT AVG(rating) FROM provider_reviews WHERE provider_id = ?", (target_provider_id,))
+    avg_row = c.fetchone()
+    new_avg = round(float(avg_row[0]), 1) if avg_row and avg_row[0] is not None else float(payload.rating)
+
+    c.execute("UPDATE provider_profiles SET rating_avg = ? WHERE id = ?", (new_avg, target_provider_id))
+    db.commit()
+
+    # Récupération de l'avis créé
+    c.execute("SELECT id, provider_id, client_email, rating, comment, created_at FROM provider_reviews WHERE id = ?", (review_id,))
+    row = c.fetchone()
+
+    return ReviewResponse(
+        id=row[0],
+        provider_id=row[1],
+        client_email=row[2],
+        rating=row[3],
+        comment=row[4],
+        created_at=row[5] or datetime.now(timezone.utc).isoformat(),
+    )
+
+
+@app.get(
+    "/api/v1/providers/{provider_id}/reviews",
+    response_model=ProviderReviewsListResponse,
+    summary="Récupérer tous les avis et la note moyenne d'un prestataire",
+)
+@app.get(
+    "/providers/{provider_id}/reviews",
+    response_model=ProviderReviewsListResponse,
+    summary="Récupérer tous les avis et la note moyenne d'un prestataire",
+)
+def get_provider_reviews(
+    provider_id: int,
+    db: sqlite3.Connection = Depends(get_db),
+):
+    c = db.cursor()
+    c.execute("SELECT id, name, coalesce(rating_avg, 4.8) FROM provider_profiles WHERE id = ?", (provider_id,))
+    prov = c.fetchone()
+    if not prov:
+        raise HTTPException(status_code=404, detail="Prestataire introuvable.")
+
+    prov_id = prov[0]
+    prov_name = prov[1]
+
+    c.execute(
+        "SELECT id, provider_id, client_email, rating, comment, created_at FROM provider_reviews WHERE provider_id = ? ORDER BY id DESC",
+        (provider_id,),
+    )
+    rows = c.fetchall()
+
+    reviews = [
+        ReviewResponse(
+            id=r[0],
+            provider_id=r[1],
+            client_email=r[2],
+            rating=r[3],
+            comment=r[4],
+            created_at=r[5] or "",
+        )
+        for r in rows
+    ]
+
+    total_reviews = len(reviews)
+    if total_reviews > 0:
+        avg_rating = round(sum(r.rating for r in reviews) / total_reviews, 1)
+    else:
+        avg_rating = float(prov[2]) if prov[2] is not None else 4.8
+
+    return ProviderReviewsListResponse(
+        provider_id=prov_id,
+        provider_name=prov_name,
+        average_rating=avg_rating,
+        total_reviews=total_reviews,
+        reviews=reviews,
+    )
+
+
 if __name__ == "__main__":
+
 
     import uvicorn
 

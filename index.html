@@ -265,11 +265,55 @@
                     Confirmer la réservation
                 </button>
             </form>
+    <!-- Modal des Avis Clients Certifiés -->
+    <div id="reviews-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-3xl max-w-lg w-full p-6 relative shadow-2xl max-h-[90vh] flex flex-col">
+            <button onclick="closeReviewsModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg cursor-pointer">✕</button>
+            <h3 class="text-lg font-bold text-white mb-1" id="reviews-prov-name">Avis & Évaluations</h3>
+            <div id="reviews-stats-banner" class="flex items-center space-x-2 text-xs text-amber-400 mb-3 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-xl">
+                <span>⭐ Note moyenne : <strong id="reviews-avg-rating">4.8</strong> / 5 (<span id="reviews-count">0</span> avis)</span>
+            </div>
+
+            <!-- Liste des avis récents -->
+            <div id="reviews-list-container" class="space-y-2 overflow-y-auto max-h-48 pr-1 mb-3">
+                <p class="text-xs text-gray-400">Chargement des avis...</p>
+            </div>
+
+            <!-- Formulaire pour ajouter un avis -->
+            <form onsubmit="submitProviderReview(event)" class="space-y-3 pt-3 border-t border-gray-800">
+                <input type="hidden" id="review-prov-id">
+                <h4 class="text-xs font-bold text-white uppercase font-mono">Laisser un avis certifié</h4>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-gray-400 uppercase mb-1">Votre E-mail</label>
+                        <input type="email" id="review-client-email" required placeholder="client@exemple.fr" class="w-full bg-black/50 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-gray-400 uppercase mb-1">Note</label>
+                        <select id="review-rating" class="w-full bg-black/50 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none cursor-pointer">
+                            <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
+                            <option value="4">⭐⭐⭐⭐ (4/5)</option>
+                            <option value="3">⭐⭐⭐ (3/5)</option>
+                            <option value="2">⭐⭐ (2/5)</option>
+                            <option value="1">⭐ (1/5)</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-400 uppercase mb-1">Votre Commentaire</label>
+                    <textarea id="review-comment" rows="2" placeholder="Partagez votre expérience sur la prestation..." class="w-full bg-black/50 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none resize-none"></textarea>
+                </div>
+                <div id="review-feedback-msg" class="hidden text-xs p-2 rounded-xl text-center"></div>
+                <button type="submit" id="review-submit-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold py-2.5 rounded-xl transition text-xs shadow-lg shadow-amber-500/20 cursor-pointer">
+                    Publier mon évaluation
+                </button>
+            </form>
         </div>
     </div>
 
     <!-- Modal d'Affichage Dynamique (Légal, Support, CGU) -->
     <div id="info-modal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
+
         <div class="bg-gray-900 border border-gray-800 rounded-3xl max-w-3xl w-full max-h-[85vh] flex flex-col overflow-hidden relative shadow-2xl">
             
             <!-- En-tête -->
@@ -1063,7 +1107,12 @@
                                     <p class="text-xs text-gray-400 mb-4">${distInfo} • Rayon max ${provider.max_distance_km} km</p>
                                 </div>
                                 <div class="flex items-center justify-between pt-3 border-t border-gray-800">
-                                    <span class="text-xs font-bold text-white">${provider.hourly_rate} € / h</span>
+                                    <div>
+                                        <span class="text-xs font-bold text-white block">${provider.hourly_rate} € / h</span>
+                                        <button onclick="openReviewsModal(${provider.id}, '${escapeHtml(provider.name)}')" class="text-[10px] text-amber-400 hover:underline cursor-pointer flex items-center mt-0.5">
+                                            ⭐ ${provider.rating || 4.8} (Avis certifiés)
+                                        </button>
+                                    </div>
                                     <div class="flex items-center space-x-2">
                                         <button onclick="openWhatsAppNegotiation('${provider.phone || '33600000000'}', '${escapeHtml(provider.skill || 'Prestation')}', ${provider.hourly_rate})" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs px-2.5 py-1.5 rounded-xl transition cursor-pointer font-medium flex items-center" title="Négocier sur WhatsApp">
                                             <i class="ph-bold ph-whatsapp-logo mr-1"></i> Discuter
@@ -1071,6 +1120,7 @@
                                         <button onclick="openBookingModal(${provider.id}, '${escapeHtml(provider.name)}', ${provider.hourly_rate})" class="bg-gray-800 hover:bg-gray-700 text-white text-xs px-3 py-1.5 rounded-xl transition cursor-pointer font-medium">Réserver</button>
                                     </div>
                                 </div>
+
                             </div>
                         `;
                     });
@@ -1314,7 +1364,115 @@
             }
         }
 
+        async function openReviewsModal(providerId, providerName) {
+            document.getElementById('review-prov-id').value = providerId;
+            document.getElementById('reviews-prov-name').innerText = `Avis & Évaluations : ${providerName}`;
+            
+            const listContainer = document.getElementById('reviews-list-container');
+            const avgRatingEl = document.getElementById('reviews-avg-rating');
+            const countEl = document.getElementById('reviews-count');
+            const feedbackMsg = document.getElementById('review-feedback-msg');
+            if (feedbackMsg) feedbackMsg.classList.add('hidden');
+
+            if (currentUser && currentUser.email) {
+                document.getElementById('review-client-email').value = currentUser.email;
+            }
+
+            listContainer.innerHTML = '<p class="text-xs text-gray-400">Chargement des avis certifiés...</p>';
+            document.getElementById('reviews-modal').classList.remove('hidden');
+
+            try {
+                const res = await fetch(`/api/v1/providers/${providerId}/reviews`);
+                const data = await res.json();
+                if (res.ok) {
+                    avgRatingEl.innerText = Number(data.average_rating).toFixed(1);
+                    countEl.innerText = data.total_reviews;
+                    
+                    if (data.reviews.length === 0) {
+                        listContainer.innerHTML = '<p class="text-xs text-gray-500 py-2">Aucun avis déposé pour le moment. Soyez le premier à évaluer ce prestataire !</p>';
+                    } else {
+                        listContainer.innerHTML = data.reviews.map(r => {
+                            const stars = '⭐'.repeat(r.rating);
+                            const comment = r.comment ? escapeHtml(r.comment) : '<em>Aucun commentaire écrit.</em>';
+                            const dateStr = r.created_at ? r.created_at.slice(0, 10) : '';
+                            return `
+                                <div class="bg-black/40 border border-gray-800 p-3 rounded-xl">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-xs font-bold text-amber-400">${stars} (${r.rating}/5)</span>
+                                        <span class="text-[10px] text-gray-500">${dateStr}</span>
+                                    </div>
+                                    <p class="text-xs text-gray-300">${comment}</p>
+                                    <span class="text-[10px] text-gray-500 font-mono">Client certifié : ${escapeHtml(r.client_email)}</span>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                listContainer.innerHTML = '<p class="text-xs text-red-400">Impossible de charger les avis.</p>';
+            }
+        }
+
+        function closeReviewsModal() {
+            document.getElementById('reviews-modal').classList.add('hidden');
+        }
+
+        async function submitProviderReview(event) {
+            event.preventDefault();
+            const btn = document.getElementById('review-submit-btn');
+            const feedbackMsg = document.getElementById('review-feedback-msg');
+            const provId = parseInt(document.getElementById('review-prov-id').value);
+            const clientEmail = document.getElementById('review-client-email').value.trim();
+            const rating = parseInt(document.getElementById('review-rating').value);
+            const comment = document.getElementById('review-comment').value.trim();
+
+            if (btn) { btn.disabled = true; btn.innerText = "Publication..."; }
+
+            try {
+                const res = await fetch(`/api/v1/providers/${provId}/reviews`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider_id: provId,
+                        client_email: clientEmail,
+                        rating: rating,
+                        comment: comment
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    if (feedbackMsg) {
+                        feedbackMsg.textContent = "✅ Merci ! Votre avis certifié a été enregistré avec succès.";
+                        feedbackMsg.className = "text-xs p-2 rounded-xl text-center bg-emerald-500/10 border border-emerald-500/30 text-emerald-400";
+                        feedbackMsg.classList.remove('hidden');
+                    }
+                    document.getElementById('review-comment').value = '';
+                    setTimeout(() => {
+                        const provName = document.getElementById('reviews-prov-name').innerText.replace('Avis & Évaluations : ', '');
+                        openReviewsModal(provId, provName);
+                    }, 1200);
+                } else {
+                    if (feedbackMsg) {
+                        feedbackMsg.textContent = "❌ " + (data.detail || "Erreur lors de l'enregistrement.");
+                        feedbackMsg.className = "text-xs p-2 rounded-xl text-center bg-red-500/10 border border-red-500/30 text-red-400";
+                        feedbackMsg.classList.remove('hidden');
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                if (feedbackMsg) {
+                    feedbackMsg.textContent = "Erreur de connexion au serveur.";
+                    feedbackMsg.className = "text-xs p-2 rounded-xl text-center bg-red-500/10 border border-red-500/30 text-red-400";
+                    feedbackMsg.classList.remove('hidden');
+                }
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = "Publier mon évaluation"; }
+            }
+        }
+
         async function initiateEscrowPayment(providerId, amount) {
+
 
             try {
                 const clientId = (currentUser && currentUser.id) ? currentUser.id : 1;
