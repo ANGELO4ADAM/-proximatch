@@ -690,6 +690,11 @@ async def login_for_access_token(
     response_model=Token,
     summary="Connexion par JSON pour applications Web et Mobiles",
 )
+@app.post(
+    "/api/v1/auth/login",
+    response_model=Token,
+    summary="Connexion par JSON pour applications Web et Mobiles",
+)
 def login_json(
     payload: UserLogin,
     db: sqlite3.Connection = Depends(get_db),
@@ -720,10 +725,16 @@ def login_json(
     response_model=UserResponse,
     summary="Consulter le profil de l'utilisateur actuellement authentifié",
 )
+@app.get(
+    "/api/v1/auth/me",
+    response_model=UserResponse,
+    summary="Consulter le profil de l'utilisateur actuellement authentifié",
+)
 def get_current_user_profile(
     current_user: dict = Depends(get_current_user),
 ):
     return current_user
+
 
 
 @app.get(
