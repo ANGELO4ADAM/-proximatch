@@ -166,7 +166,7 @@
 
     <!-- FOOTER PROFESSIONNEL -->
     <footer class="border-t border-gray-800/60 bg-gray-950 mt-12 py-8 px-4 text-xs text-gray-400">
-        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="max-w-[96%] mx-auto grid grid-cols-1 md:grid-cols-4 gap-6">
             <div>
                 <span class="text-sm font-black tracking-tight text-white">MARKET<span class="text-amber-500">PLACE</span></span>
                 <p class="mt-2 text-gray-500">La mise en relation locale, sécurisée par séquestre et géolocalisée.</p>
@@ -174,17 +174,17 @@
             <div>
                 <h4 class="font-bold text-white mb-2 uppercase text-[10px] tracking-wider">Navigation</h4>
                 <ul class="space-y-1.5">
-                    <li><a href="#" onclick="resetFilters()" class="hover:text-amber-400 transition">Accueil</a></li>
-                    <li><a href="#" onclick="openAuthModal('provider')" class="hover:text-amber-400 transition">Devenir Prestataire</a></li>
-                    <li><a href="#" onclick="switchView('map')" class="hover:text-amber-400 transition">Carte Radar</a></li>
+                    <li><a href="#" onclick="switchView('grid'); return false;" class="hover:text-amber-400 transition">Accueil (Grille)</a></li>
+                    <li><a href="#" onclick="openAuthModal('provider'); return false;" class="hover:text-amber-400 transition">Devenir Prestataire</a></li>
+                    <li><a href="#" onclick="switchView('map'); return false;" class="hover:text-amber-400 transition">Carte Radar 5-20km</a></li>
                 </ul>
             </div>
             <div>
                 <h4 class="font-bold text-white mb-2 uppercase text-[10px] tracking-wider">Support & Légal</h4>
                 <ul class="space-y-1.5">
-                    <li><a href="#" onclick="alert('Centre d\'aide disponible 24/7 via l\'assistant')" class="hover:text-amber-400 transition">Centre d'aide</a></li>
-                    <li><a href="#" onclick="alert('Paiements et séquestre garantis par Stripe Connect')" class="hover:text-amber-400 transition">Conditions Générales</a></li>
-                    <li><a href="#" onclick="alert('Vos données sont protégées et anonymisées')" class="hover:text-amber-400 transition">Politique de Confidentialité</a></li>
+                    <li><a href="#" onclick="openInfoModal('help'); return false;" class="hover:text-amber-400 transition">Centre d'aide & FAQ</a></li>
+                    <li><a href="#" onclick="openInfoModal('cgu'); return false;" class="hover:text-amber-400 transition">Conditions Générales (CGU)</a></li>
+                    <li><a href="#" onclick="openInfoModal('security'); return false;" class="hover:text-amber-400 transition">Sécurité & Anti-Désintermédiation</a></li>
                 </ul>
             </div>
             <div>
@@ -193,8 +193,8 @@
                 <a href="mailto:admin@marketplace.local" class="text-amber-500 hover:underline">admin@marketplace.local</a>
             </div>
         </div>
-        <div class="max-w-7xl mx-auto px-4 mt-8 pt-6 border-t border-gray-900 text-center text-gray-600 text-[11px]">
-            &copy; 2026 Marketplace Locale. Tous droits réservés.
+        <div class="max-w-[96%] mx-auto px-4 mt-8 pt-6 border-t border-gray-900 text-center text-gray-600 text-[11px]">
+            &copy; 2026 Marketplace Locale. Sécurité Anti-Désintermédiation & Séquestre Stripe.
         </div>
     </footer>
 
@@ -260,6 +260,31 @@
             </form>
         </div>
     </div>
+
+    <!-- Modal d'Affichage Dynamique (Légal, Support, CGU) -->
+    <div id="info-modal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-3xl max-w-3xl w-full max-h-[85vh] flex flex-col overflow-hidden relative shadow-2xl">
+            
+            <!-- En-tête -->
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900/80">
+                <h3 class="text-base font-bold text-white" id="info-modal-title">Titre</h3>
+                <button onclick="closeInfoModal()" class="text-gray-400 hover:text-white text-xl p-2 cursor-pointer">✕</button>
+            </div>
+
+            <!-- Corps du texte -->
+            <div id="info-modal-body" class="p-6 overflow-y-auto space-y-4 text-xs text-gray-300 leading-relaxed custom-scrollbar">
+                <!-- Contenu injecté dynamiquement -->
+            </div>
+
+            <!-- Pied de modale -->
+            <div class="p-4 border-t border-gray-800 bg-gray-900/80 flex justify-end">
+                <button onclick="closeInfoModal()" class="bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold px-5 py-2 rounded-xl transition cursor-pointer">
+                    Fermer
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Scripts JavaScript -->
     <script>
@@ -950,8 +975,52 @@
             }
         }
 
+        // -------------------------------------------------------------
+        // GESTION DES MODALES D'INFORMATIONS LÉGALES & SUPPORT
+        // -------------------------------------------------------------
+        function openInfoModal(type) {
+            const modal = document.getElementById('info-modal');
+            const title = document.getElementById('info-modal-title');
+            const body = document.getElementById('info-modal-body');
+            
+            modal.classList.remove('hidden');
+
+            if (type === 'help') {
+                title.textContent = "Centre d'Aide & Support Technique";
+                body.innerHTML = `
+                    <h4 class="font-bold text-white text-sm">Comment fonctionne la mise en relation ?</h4>
+                    <p>La plateforme utilise un radar géolocalisé (de 5 à 20 km) pour afficher instantanément les prestataires disponibles autour de vous. Vous pouvez basculer à tout moment entre la vue grille et la vue carte.</p>
+                    <h4 class="font-bold text-white text-sm mt-4">Comment contacter le support technique ?</h4>
+                    <p>En cas de dysfonctionnement de l'interface, de souci avec votre compte ou de question sur les paiements sécurisés, vous pouvez joindre directement l'administrateur système à l'adresse : <strong class="text-amber-400">admin@marketplace.local</strong>.</p>
+                `;
+            } else if (type === 'cgu') {
+                title.textContent = "Conditions Générales d'Utilisation (CGU)";
+                body.innerHTML = `
+                    <h4 class="font-bold text-white text-sm">1. Objet de la plateforme</h4>
+                    <p>La présente plateforme met en relation des clients recherchant des services de proximité et des prestataires indépendants qualifiés. L'utilisation du site implique l'acceptation sans réserve des présentes conditions.</p>
+                    <h4 class="font-bold text-white text-sm mt-4">2. Inscription et Rôles</h4>
+                    <p>L'utilisateur choisit lors de son inscription son profil (Client ou Prestataire). Les prestataires s'engagent à fournir des informations exactes sur leurs compétences, leurs tarifs horaires et leur zone d'intervention géographique.</p>
+                    <h4 class="font-bold text-white text-sm mt-4">3. Responsabilité</h4>
+                    <p>La plateforme agit en tant qu'intermédiaire technique de mise en relation. La réalisation des prestations s'effectue sous la seule responsabilité contractuelle entre le client et le prestataire.</p>
+                `;
+            } else if (type === 'security') {
+                title.textContent = "Sécurité & Politique Anti-Désintermédiation";
+                body.innerHTML = `
+                    <h4 class="font-bold text-white text-sm">Séquestre des fonds (Stripe)</h4>
+                    <p>Pour garantir une sécurité maximale aux deux parties, les paiements transitent par un système de séquestre bancaire. Les fonds sont bloqués de manière sécurisée et ne sont libérés au profit du prestataire qu'après validation de la bonne exécution de la mission.</p>
+                    <h4 class="font-bold text-white text-sm mt-4">Politique Anti-Désintermédiation</h4>
+                    <p>Afin de préserver la qualité du service, la couverture des garanties et le fonctionnement du système de séquestre, toute tentative de contournement de la plateforme pour finaliser des prestations en dehors du système officiel est strictement interdite et expose les comptes concernés à une suspension immédiate.</p>
+                `;
+            }
+        }
+
+        function closeInfoModal() {
+            document.getElementById('info-modal').classList.add('hidden');
+        }
+
         updateNavbar();
         searchProviders();
+
     </script>
 </body>
 </html>
