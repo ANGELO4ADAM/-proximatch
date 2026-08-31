@@ -1172,44 +1172,71 @@
             document.getElementById('info-modal').classList.add('hidden');
         }
 
-        async function loadLocalAds(city = 'Paris') {
+        async function loadLocalAds(cityName = "Bondy") {
             try {
-                const res = await fetch(`/api/v1/ads/city/${encodeURIComponent(city)}`);
-                const data = await res.json();
+                let response = await fetch(`/api/v1/ads/city/${encodeURIComponent(cityName)}`);
+                let data = await response.json();
+                
+                let adsContainer = document.getElementById('sidebar-ads');
+                if (adsContainer) {
+                    adsContainer.innerHTML = "";
+                    if (!data.ads || data.ads.length === 0) {
+                        adsContainer.innerHTML = "<p class='text-xs text-gray-500'>Aucune publicité locale pour le moment.</p>";
+                    } else {
+                        data.ads.forEach(ad => {
+                            let adElement = document.createElement('div');
+                            adElement.className = "p-3 mb-2 border border-gray-800 rounded-xl bg-gray-900/80 shadow-sm text-left";
+                            adElement.innerHTML = `
+                                <h4 class="font-bold text-xs text-amber-400">${escapeHtml(ad.shop)} (${escapeHtml(data.city)})</h4>
+                                <p class="text-[11px] text-gray-300 mt-1">${escapeHtml(ad.text)}</p>
+                                <a href="tel:${ad.phone}" class="text-[11px] text-emerald-400 font-medium hover:underline mt-2 block">📞 ${escapeHtml(ad.phone)}</a>
+                            `;
+                            adsContainer.appendChild(adElement);
+                        });
+                    }
+                }
+
+                const leftAd = document.getElementById('sidebar-ad-left');
+                const rightAd = document.getElementById('sidebar-ad-right');
+                
                 if (data.ads && data.ads.length > 0) {
-                    const leftAd = document.getElementById('sidebar-ad-left');
-                    const rightAd = document.getElementById('sidebar-ad-right');
-                    
                     if (leftAd && data.ads[0]) {
                         leftAd.innerHTML = `
-                            <div class="text-amber-400 font-bold text-xs mb-1">${escapeHtml(data.ads[0].shop)}</div>
+                            <div class="text-amber-400 font-bold text-xs mb-1">${escapeHtml(data.ads[0].shop)} (${escapeHtml(data.city)})</div>
                             <div class="text-[11px] text-gray-300 mb-2 leading-relaxed">${escapeHtml(data.ads[0].text)}</div>
                             <a href="tel:${data.ads[0].phone}" class="inline-block text-[10px] text-black bg-amber-500 font-bold px-2 py-1 rounded-lg hover:bg-amber-400 transition">📞 ${data.ads[0].phone}</a>
                         `;
                     }
                     if (rightAd && data.ads[1]) {
                         rightAd.innerHTML = `
-                            <div class="text-amber-400 font-bold text-xs mb-1">${escapeHtml(data.ads[1].shop)}</div>
+                            <div class="text-amber-400 font-bold text-xs mb-1">${escapeHtml(data.ads[1].shop)} (${escapeHtml(data.city)})</div>
                             <div class="text-[11px] text-gray-300 mb-2 leading-relaxed">${escapeHtml(data.ads[1].text)}</div>
                             <a href="tel:${data.ads[1].phone}" class="inline-block text-[10px] text-black bg-amber-500 font-bold px-2 py-1 rounded-lg hover:bg-amber-400 transition">📞 ${data.ads[1].phone}</a>
                         `;
+                    } else if (rightAd && data.ads[0]) {
+                        rightAd.innerHTML = `
+                            <div class="text-amber-400 font-bold text-xs mb-1">${escapeHtml(data.ads[0].shop)} (${escapeHtml(data.city)})</div>
+                            <div class="text-[11px] text-gray-300 mb-2 leading-relaxed">${escapeHtml(data.ads[0].text)}</div>
+                            <a href="tel:${data.ads[0].phone}" class="inline-block text-[10px] text-black bg-amber-500 font-bold px-2 py-1 rounded-lg hover:bg-amber-400 transition">📞 ${data.ads[0].phone}</a>
+                        `;
                     }
                 }
-            } catch (e) {
-                console.error("Erreur chargement pubs locales:", e);
+            } catch (error) {
+                console.error("Erreur de chargement des pubs locales:", error);
             }
         }
 
         updateNavbar();
         searchProviders();
         initWebSocketChat();
-        loadLocalAds('Paris');
-        window.addEventListener('DOMContentLoaded', () => {
+        loadLocalAds("Bondy");
+        document.addEventListener("DOMContentLoaded", () => {
             initWebSocketChat();
-            loadLocalAds('Paris');
+            loadLocalAds("Bondy");
         });
 
     </script>
+
 
 
 </body>
