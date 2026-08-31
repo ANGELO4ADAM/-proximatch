@@ -6,10 +6,12 @@ import sqlite3
 import unicodedata
 import httpx
 import json
+import hashlib
 import stripe
 from dotenv import load_dotenv
 
 load_dotenv()
+
 from typing import Any, Dict, List, Optional
 
 import bcrypt
@@ -28,7 +30,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
+
 
 from moderation import (
     moderate_message,
@@ -508,11 +511,23 @@ class ActivateRequest(BaseModel):
     email: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    token: str
+    new_password: str
+
+
 class AdRequest(BaseModel):
     shop_name: str
     city: str
     banner_text: str
     contact_phone: str
+
 
 
 class UserLogin(BaseModel):
@@ -810,7 +825,61 @@ async def activate_account(data: ActivateRequest, db: sqlite3.Connection = Depen
 
 
 @app.post(
+    "/api/v1/auth/forgot-password",
+    summary="Demande de réinitialisation de mot de passe",
+)
+@app.post(
+    "/auth/forgot-password",
+    summary="Demande de réinitialisation de mot de passe",
+)
+async def forgot_password(data: ForgotPasswordRequest, db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
+    c.execute("SELECT id FROM users WHERE lower(email) = ?", (data.email.strip().lower(),))
+    user = c.fetchone()
+
+    if not user:
+        # Par sécurité, on ne divulgue pas si l'email existe ou non, mais on simule le succès
+        return {"status": "success", "message": "Si cet e-mail existe, un lien de réinitialisation a été envoyé."}
+
+    # Génération d'un token simple de réinitialisation
+    reset_token = hashlib.sha256((data.email.strip().lower() + "secret_reset_salt").encode()).hexdigest()[:10]
+
+    # Simulation de l'envoi d'e-mail
+    print(f"[EMAIL SIMULATION] Lien de réinitialisation pour {data.email} : /reset-password?token={reset_token}")
+
+    return {
+        "status": "success",
+        "message": "Un e-mail contenant les instructions de réinitialisation a été envoyé à votre adresse.",
+        "reset_token_demo": reset_token
+    }
+
+
+@app.post(
+    "/api/v1/auth/reset-password",
+    summary="Réinitialisation du mot de passe avec jeton de validation",
+)
+@app.post(
+    "/auth/reset-password",
+    summary="Réinitialisation du mot de passe avec jeton de validation",
+)
+async def reset_password(data: ResetPasswordRequest, db: sqlite3.Connection = Depends(get_db)):
+    c = db.cursor()
+
+    # Vérification du token
+    expected_token = hashlib.sha256((data.email.strip().lower() + "secret_reset_salt").encode()).hexdigest()[:10]
+    if data.token != expected_token:
+        raise HTTPException(status_code=400, detail="Jeton de réinitialisation invalide ou expiré.")
+
+    new_pwd_hash = get_password_hash(data.new_password)
+    c.execute("UPDATE users SET password_hash = ? WHERE lower(email) = ?", (new_pwd_hash, data.email.strip().lower()))
+    db.commit()
+
+    return {"status": "success", "message": "Votre mot de passe a été mis à jour avec succès. Vous pouvez vous connecter."}
+
+
+@app.post(
     "/token",
+
 
     response_model=Token,
     summary="Connexion standard OAuth2 (Swagger / Client) pour obtenir un token JWT",

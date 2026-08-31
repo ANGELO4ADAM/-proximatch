@@ -491,7 +491,7 @@
                         </div>
                         <div class="flex justify-between items-center text-xs">
                             <span class="text-gray-400">Mot de passe oublié ?</span>
-                            <a href="#" onclick="alert('Un e-mail de réinitialisation va être envoyé.')" class="text-amber-500 hover:underline">Récupérer</a>
+                            <button type="button" onclick="showForgotPasswordForm()" class="text-amber-500 hover:underline cursor-pointer">Récupérer</button>
                         </div>
 
                         <!-- Conteneur d'erreur stylé (masqué par défaut) -->
@@ -568,7 +568,153 @@
             }
         }
 
+        function showForgotPasswordForm() {
+            const container = document.getElementById('form-container');
+            const loginTabBtn = document.getElementById('tab-login');
+            const regTabBtn = document.getElementById('tab-register');
+            if (loginTabBtn) loginTabBtn.className = "flex-1 pb-3 text-xs font-bold text-center border-b-2 border-transparent text-gray-400 hover:text-white transition cursor-pointer";
+            if (regTabBtn) regTabBtn.className = "flex-1 pb-3 text-xs font-bold text-center border-b-2 border-transparent text-gray-400 hover:text-white transition cursor-pointer";
+
+            container.innerHTML = `
+                <form onsubmit="handleForgotPasswordSubmit(event)" class="space-y-4">
+                    <div>
+                        <h4 class="text-sm font-bold text-white mb-1">Récupération de mot de passe</h4>
+                        <p class="text-[11px] text-gray-400">Entrez votre e-mail pour recevoir les instructions de réinitialisation sécurisées.</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase text-gray-400 mb-1">E-mail</label>
+                        <input type="email" id="forgot-email" required placeholder="votre@email.fr" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none transition">
+                    </div>
+                    <div id="forgot-msg" class="hidden text-xs p-3 rounded-xl text-center"></div>
+                    <button type="submit" id="forgot-submit-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs py-3 rounded-xl transition mt-2 cursor-pointer shadow-lg shadow-amber-500/20">
+                        Envoyer le lien de réinitialisation
+                    </button>
+                    <div class="text-center pt-2">
+                        <button type="button" onclick="switchAuthTab('login')" class="text-xs text-gray-400 hover:text-white underline cursor-pointer">← Retour à la connexion</button>
+                    </div>
+                </form>
+            `;
+        }
+
+        async function handleForgotPasswordSubmit(event) {
+            event.preventDefault();
+            const btn = document.getElementById('forgot-submit-btn');
+            const emailInput = document.getElementById('forgot-email');
+            const email = emailInput ? emailInput.value.trim() : '';
+            const msgDiv = document.getElementById('forgot-msg');
+
+            if (btn) { btn.disabled = true; btn.innerText = "Envoi en cours..."; }
+
+            try {
+                const res = await fetch('/api/v1/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const result = await res.json();
+                if (msgDiv) {
+                    msgDiv.textContent = result.message;
+                    msgDiv.className = "text-xs p-3 rounded-xl text-center bg-emerald-500/10 border border-emerald-500/30 text-emerald-400";
+                    msgDiv.classList.remove('hidden');
+                }
+                if (result.reset_token_demo) {
+                    setTimeout(() => {
+                        showResetPasswordForm(email, result.reset_token_demo);
+                    }, 1200);
+                }
+            } catch (err) {
+                if (msgDiv) {
+                    msgDiv.textContent = "Erreur de connexion au serveur.";
+                    msgDiv.className = "text-xs p-3 rounded-xl text-center bg-red-500/10 border border-red-500/30 text-red-400";
+                    msgDiv.classList.remove('hidden');
+                }
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = "Envoyer le lien de réinitialisation"; }
+            }
+        }
+
+        function showResetPasswordForm(email, token = '') {
+            const container = document.getElementById('form-container');
+            container.innerHTML = `
+                <form onsubmit="handleResetPasswordSubmit(event)" class="space-y-4">
+                    <div>
+                        <h4 class="text-sm font-bold text-white mb-1">Nouveau mot de passe</h4>
+                        <p class="text-[11px] text-gray-400">Saisissez votre nouveau mot de passe sécurisé pour finaliser la mise à jour.</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase text-gray-400 mb-1">E-mail</label>
+                        <input type="email" id="reset-email" value="${escapeHtml(email)}" required class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none transition" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Jeton de sécurité (Token)</label>
+                        <input type="text" id="reset-token" value="${escapeHtml(token)}" required placeholder="Ex: a1b2c3d4e5" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none transition font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Nouveau mot de passe</label>
+                        <div class="relative">
+                            <input type="password" id="reset-new-password" required placeholder="••••••••" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 pr-10 text-xs text-white focus:border-amber-500 outline-none transition">
+                            <button type="button" onclick="togglePasswordVisibility('reset-new-password', 'toggle-icon-reset')" class="absolute right-3 top-2.5 text-gray-400 hover:text-white transition cursor-pointer">
+                                <i id="toggle-icon-reset" class="ph-bold ph-eye text-base"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="reset-msg" class="hidden text-xs p-3 rounded-xl text-center"></div>
+                    <button type="submit" id="reset-submit-btn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs py-3 rounded-xl transition mt-2 cursor-pointer shadow-lg shadow-emerald-500/20">
+                        Confirmer le nouveau mot de passe
+                    </button>
+                    <div class="text-center pt-2">
+                        <button type="button" onclick="switchAuthTab('login')" class="text-xs text-gray-400 hover:text-white underline cursor-pointer">← Retour à la connexion</button>
+                    </div>
+                </form>
+            `;
+        }
+
+        async function handleResetPasswordSubmit(event) {
+            event.preventDefault();
+            const btn = document.getElementById('reset-submit-btn');
+            const email = document.getElementById('reset-email').value.trim();
+            const token = document.getElementById('reset-token').value.trim();
+            const new_password = document.getElementById('reset-new-password').value;
+            const msgDiv = document.getElementById('reset-msg');
+
+            if (btn) { btn.disabled = true; btn.innerText = "Mise à jour..."; }
+
+            try {
+                const res = await fetch('/api/v1/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, token, new_password })
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    if (msgDiv) {
+                        msgDiv.textContent = result.message;
+                        msgDiv.className = "text-xs p-3 rounded-xl text-center bg-emerald-500/10 border border-emerald-500/30 text-emerald-400";
+                        msgDiv.classList.remove('hidden');
+                    }
+                    setTimeout(() => {
+                        switchAuthTab('login');
+                    }, 1500);
+                } else {
+                    if (msgDiv) {
+                        msgDiv.textContent = result.detail || "Jeton invalide.";
+                        msgDiv.className = "text-xs p-3 rounded-xl text-center bg-red-500/10 border border-red-500/30 text-red-400";
+                        msgDiv.classList.remove('hidden');
+                    }
+                }
+            } catch (err) {
+                if (msgDiv) {
+                    msgDiv.textContent = "Erreur de connexion au serveur.";
+                    msgDiv.className = "text-xs p-3 rounded-xl text-center bg-red-500/10 border border-red-500/30 text-red-400";
+                    msgDiv.classList.remove('hidden');
+                }
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = "Confirmer le nouveau mot de passe"; }
+            }
+        }
+
         function togglePasswordVisibility(inputId, iconId) {
+
             const inputField = document.getElementById(inputId);
             const iconElement = document.getElementById(iconId);
 
