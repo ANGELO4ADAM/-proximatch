@@ -482,7 +482,12 @@
                         </div>
                         <div>
                             <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Mot de passe</label>
-                            <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
+                            <div class="relative">
+                                <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 pr-10 text-xs text-white focus:border-amber-500 outline-none">
+                                <button type="button" onclick="togglePasswordVisibility('login-password', 'toggle-icon-login')" class="absolute right-3 top-2.5 text-gray-400 hover:text-white transition cursor-pointer">
+                                    <i id="toggle-icon-login" class="ph-bold ph-eye text-base"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="flex justify-between items-center text-xs">
                             <span class="text-gray-400">Mot de passe oublié ?</span>
@@ -540,7 +545,12 @@
                         </div>
                         <div>
                             <label class="block text-xs font-mono uppercase text-gray-400 mb-1">Mot de passe</label>
-                            <input type="password" id="reg-password" required placeholder="••••••••" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-amber-500 outline-none">
+                            <div class="relative">
+                                <input type="password" id="reg-password" required placeholder="••••••••" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-2.5 pr-10 text-xs text-white focus:border-amber-500 outline-none">
+                                <button type="button" onclick="togglePasswordVisibility('reg-password', 'toggle-icon-reg')" class="absolute right-3 top-2.5 text-gray-400 hover:text-white transition cursor-pointer">
+                                    <i id="toggle-icon-reg" class="ph-bold ph-eye text-base"></i>
+                                </button>
+                            </div>
                         </div>
                         <button type="submit" id="reg-submit-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs py-3 rounded-xl transition mt-2 cursor-pointer shadow-lg shadow-amber-500/20">
                             Créer mon Compte
@@ -549,6 +559,22 @@
                 `;
             }
         }
+
+        function togglePasswordVisibility(inputId, iconId) {
+            const inputField = document.getElementById(inputId);
+            const iconElement = document.getElementById(iconId);
+
+            if (inputField && iconElement) {
+                if (inputField.type === 'password') {
+                    inputField.type = 'text';
+                    iconElement.className = 'ph-bold ph-eye-slash text-base text-amber-500';
+                } else {
+                    inputField.type = 'password';
+                    iconElement.className = 'ph-bold ph-eye text-base';
+                }
+            }
+        }
+
 
         function toggleProviderFields() {
             const role = document.getElementById('reg-role').value;
