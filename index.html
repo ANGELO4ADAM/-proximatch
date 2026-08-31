@@ -15,8 +15,14 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.3); border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.7); }
+        
+        /* Rend la carte OpenStreetMap élégante et sombre instantanément */
+        #leaflet-map .leaflet-tile-pane {
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
     </style>
 </head>
+
 
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col font-sans antialiased selection:bg-amber-500 selection:text-black">
 
